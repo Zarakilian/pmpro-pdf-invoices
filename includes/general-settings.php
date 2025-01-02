@@ -76,13 +76,13 @@ function pmpro_pdf_invoice_settings_page() {
 	$expired = false;
 
 	if ( empty( 'license' ) ) {
-		pmpro_pdf_admin_notice( __( 'If you are running PMPro PDF Invoices on a live site, we recommend an annual support license. <a href="https://yoohooplugins.com/plugins/zapier-integration/" target="_blank" rel="noopener">More Info</a>', 'pmpro-pdf-invoices' ), 'warning' );
+		pmpro_pdf_admin_notice( __( 'If you are running PMPro PDF Invoices on a live site, we recommend an annual support license. <a href="https://yoohooplugins.com/plugins/paid-memberships-pro-pdf-invoices/" target="_blank" rel="noopener">More Info</a>', 'pmpro-pdf-invoices' ), 'warning' );
 	}
 	// get the date and show a notice.
 	if ( ! empty( $expires ) ) {
 		$expired = pmpro_pdf_license_expires( $expires );
 		if ( $expired ) {
-			pmpro_pdf_admin_notice( __( 'Your license key has expired. We recommend in renewing your annual support license to continue to get automatic updates and premium support. <a href="https://yoohooplugins.com/plugins/zapier-integration/" target="_blank" rel="noopener">More Info</a>', 'pmpro-pdf-invoices' ), 'warning' );
+			pmpro_pdf_admin_notice( __( 'Your license key has expired. We recommend in renewing your annual support license to continue to get automatic updates and premium support. <a href="https://yoohooplugins.com/plugins/paid-memberships-pro-pdf-invoices/" target="_blank" rel="noopener">More Info</a>', 'pmpro-pdf-invoices' ), 'warning' );
 			$expires = __( 'Your license key has expired.', 'pmpro-pdf-invoices' );
 		} else {
 			$expired = false;
