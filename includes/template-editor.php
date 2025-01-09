@@ -164,8 +164,8 @@ function pmpro_pdf_remove_empty_rows($content){
 }
 
 function pmpro_pdf_temlate_editor_get_forced_css(){
-    return "<style>h1, p, table {
-              font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+    return '<style> body {
+              font-family: "Open Sans", sans-serif;
           }
 
           #invoice, table{
@@ -209,5 +209,5 @@ function pmpro_pdf_temlate_editor_get_forced_css(){
 
           .row td, .row th{
               padding:12px;
-          }</style>";
+          }</style>';
 }
