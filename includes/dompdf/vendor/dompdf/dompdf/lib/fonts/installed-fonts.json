@@ -3,15 +3,5 @@
         "300": "\/Users\/andrewlima\/Local Sites\/pmpro\/app\/public\/wp-content\/plugins\/pmpro-pdf-invoices\/includes\/dompdf\/vendor\/dompdf\/dompdf\/lib\/fonts\/source_sans_pro_300_ca375937325388271c3dcc74f46eff77",
         "normal": "\/Users\/andrewlima\/Local Sites\/pmpro\/app\/public\/wp-content\/plugins\/pmpro-pdf-invoices\/includes\/dompdf\/vendor\/dompdf\/dompdf\/lib\/fonts\/source_sans_pro_normal_d3b0ce0dad153c1788655641fb77aff9",
         "bold": "source_sans_pro_bold_ec43913a1bbc7168985c22b418d3b75e"
-    },
-    "noto sans": {
-        "300": "\/Users\/robindevitt\/Local Sites\/pmpro\/app\/public\/wp-content\/plugins\/pmpro-pdf-invoices\/includes\/dompdf\/vendor\/dompdf\/dompdf\/lib\/fonts\/noto_sans_300_61ce824073359c8c61271027262053fc",
-        "normal": "\/Users\/robindevitt\/Local Sites\/pmpro\/app\/public\/wp-content\/plugins\/pmpro-pdf-invoices\/includes\/dompdf\/vendor\/dompdf\/dompdf\/lib\/fonts\/noto_sans_normal_aae357edc48299888123f133be2d7aef",
-        "bold": "noto_sans_bold_61c56aab9e439e54707190f59bc8c51c"
-    },
-    "open sans": {
-        "300": "\/Users\/robindevitt\/Local Sites\/pmpro\/app\/public\/wp-content\/plugins\/pmpro-pdf-invoices\/includes\/dompdf\/vendor\/dompdf\/dompdf\/lib\/fonts\/open_sans_300_8513b9024ad211a10e857eba11f0f357",
-        "normal": "\/Users\/robindevitt\/Local Sites\/pmpro\/app\/public\/wp-content\/plugins\/pmpro-pdf-invoices\/includes\/dompdf\/vendor\/dompdf\/dompdf\/lib\/fonts\/open_sans_normal_2bf6e8a03908d49a7fa7b1094b0c2804",
-        "bold": "open_sans_bold_0e7196744e416eea97ecd5b9781a44c2"
     }
 }
