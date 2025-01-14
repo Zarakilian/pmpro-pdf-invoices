@@ -207,14 +207,20 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		$billing_details = '';
 	}
 
-	if ( !empty($_GET['sub_action'] && $_GET['sub_action'] == 'view_sample') ) {
+	if ( ! empty($_GET['sub_action'] ) && $_GET['sub_action'] == 'view_sample' ) {
 		$date = date_i18n( get_option( 'date_format' ), current_time( 'timestamp' ) );
 	} else {
 		$date = date_i18n( get_option( 'date_format' ), $order->getTimestamp() );
-	}	
-	$gateway = pmpro_gateways();
+	}
 
-	$payment_method = !empty( $order_data->gateway ) ? apply_filters( 'pmpro_pdf_gateway_string', $gateway[$order_data->gateway] ) : __( 'N/A', 'pmpro-pdf-invoices');
+	$gateway = pmpro_gateways();
+	
+	// Get the payment method for the order, adds support for "Free" as this isn't a registered payment gateway.
+	$payment_method = isset( $gateway[$order_data->gateway] ) ? apply_filters( 'pmpro_pdf_gateway_string', $gateway[$order_data->gateway] ) : __( 'N/A', 'pmpro-pdf-invoices' );
+
+	if ( $order_data->gateway == 'free' ) {
+		$payment_method = apply_filters( 'pmpro_pdf_gateway_string', __( 'Free', 'pmpro-pdf-invoices' ) );
+	}
 
 	$order_level_name = '';
 	if(function_exists('pmpro_getLevel')){
@@ -226,6 +232,10 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 
 	$logo_url = get_option(PMPRO_PDF_LOGO_URL, '');
 	$logo_image = !empty($logo_url) ? "<img style='max-width:300px;' src='$logo_url' />" : '';
+
+
+	$member_first_name = isset( $user->data->first_name ) ? sanitize_text_field( $user->data->first_name ) : '';
+	$member_last_name = isset( $user->data->last_name ) ? sanitize_text_field( $user->data->last_name ) : '';
 
 	// Items to replace.
 	$replacements = array(
@@ -249,21 +259,22 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		'{{display_name}}' => $user->data->display_name ?: '',
 		'{{levels_url}}' => pmpro_url( 'levels' ) ?: '',
 		'{{billing_address}}' => wp_kses_post( $billing_details ) ?: '', // The formatted billing address.
-		'{{billing_name}}' => $order_data->billing->name ?: '',
-		'{{billing_street}}' => $order_data->billing->street ?: '',
-		'{{billing_street2}}' => $order_data->billing->street2 ?: '',
-		'{{billing_city}}' => $order_data->billing->city ?: '',
-		'{{billing_state}}' => $order_data->billing->state ?: '',
-		'{{billing_zip}}' => $order_data->billing->zip ?: '',
-		'{{billing_country}}' => $order_data->billing->country ?: '',
-		'{{billing_phone}}' => $order_data->billing->phone ?: '',
+		'{{billing_name}}' => isset( $order_data->billing->name ) ? sanitize_text_field( $order_data->billing->name ) : '',
+		'{{billing_street}}' => isset( $order_data->billing->street ) ? sanitize_text_field( $order_data->billing->street ) : '',
+		'{{billing_street2}}' => isset( $order_data->billing->street2 ) ? sanitize_text_field( $order_data->billing->street2 ) : '',
+		'{{billing_city}}' => isset( $order_data->billing->city ) ? sanitize_text_field( $order_data->billing->city ) : '',
+		'{{billing_state}}' => isset( $order_data->billing->state ) ? sanitize_text_field( $order_data->billing->state ) : '',
+		'{{billing_zip}}' => isset( $order_data->billing->zip ) ? sanitize_text_field( $order_data->billing->zip ) : '',
+		'{{billing_country}}' => isset( $order_data->billing->country ) ? sanitize_text_field( $order_data->billing->country ) : '',
+		'{{billing_phone}}' => isset( $order_data->billing->phone ) ? sanitize_text_field( $order_data->billing->phone ) : '',
 		'{{order_link}}' => pmpro_login_url( pmpro_url( 'invoice', '?invoice=' . $order_data->code ) ),
 		'{{order_url}}' => pmpro_login_url( pmpro_url( 'invoice', '?invoice=' . $order_data->code ) ),
 		'{{name}}' => $user->data->display_name ?: '',
-		'{{first_name}}' => $user->data->first_name ?: '',
-		'{{last_name}}' => $user->data->last_name ?: '',
-		'{{full_name}}' => $user->data->first_name . ' ' . $user->data->last_name ?: '',
+		'{{first_name}}' => $member_first_name,
+		'{{last_name}}' => $member_last_name,
+		'{{full_name}}' => ! empty( $member_first_name . ' ' . $member_last_name ) ?: '',
 	);
+
 
 	//Additional replacements - Developer hook to add custom variable parse
 	//Should use key-value pair array (assoc)
