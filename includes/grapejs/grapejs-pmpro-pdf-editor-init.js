@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
       upload: false,
     },
     protectedCss: `h1, p, table {
-                      font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
+                      font-family: 'Open Sans', sans-serif;
                   }
 
                   #invoice, table{
@@ -63,6 +63,52 @@ document.addEventListener("DOMContentLoaded", function(event) {
                   .row td, .row th{
                       padding:12px;
                   }`,
+    canvas: {
+      styles: [
+        "https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&family=Noto+Sans:wght@300;400;700&display=swap",
+      ],
+    },
+    styleManager: {
+      sectors: [
+        {
+          name: "Typography",
+          open: true,
+          buildProps: [
+            "font-family",
+            "font-size",
+            "color",
+            "font-weight",
+            "letter-spacing",
+            "line-height",
+          ],
+          properties: [
+            {
+              property: "font-family",
+              name: "Font",
+              type: "select",
+              defaults: "Open Sans, sans-serif",
+              options: [
+                { value: "Arial, Helvetica, sans-serif", name: "Arial" },
+                { value: "Arial Black, Gadget, sans-serif", name: "Arial Black" },
+                { value: "Brush Script MT, sans-serif", name: "Brush Script MT" },
+                { value: "Comic Sans MS, cursive, sans-serif", name: "Comic Sans MS" },
+                { value: "Courier New, Courier, monospace", name: "Courier New" },
+                { value: "Georgia, serif", name: "Georgia" },
+                { value: "Helvetica, sans-serif", name: "Helvetica" },
+                { value: "Impact, Charcoal, sans-serif", name: "Impact" },
+                { value: "Lucida Sans Unicode, Lucida Grande, sans-serif", name: "Lucida Sans Unicode" },
+                { value: "Tahoma, Geneva, sans-serif", name: "Tahoma" },
+                { value: "Times New Roman, Times, serif", name: "Times New Roman" },
+                { value: "Trebuchet MS, Helvetica, sans-serif", name: "Trebuchet MS" },
+                { value: "Verdana, Geneva, sans-serif", name: "Verdana" },
+                { value: "Open Sans, sans-serif", name: "Open Sans" },
+                { value: "Noto Sans, sans-serif", name: "Noto Sans" },
+              ],
+            },
+          ],
+        },
+      ],
+    },
   });
 
   window.pmpro_pdf_editor.Panels.getButton('views', 'open-blocks').set('active', true);
@@ -313,7 +359,7 @@ jQuery(function($){
     if(typeof window.pmpro_pdf_editor !== 'undefined' && typeof window.pmpro_pdf_editor.editor !== 'undefined'){
       var current_changes_counter = window.pmpro_pdf_editor.editor.get('changesCount');
       if(current_changes_counter > 0 && pmpro_run_default_unload){
-        
+
         var current_href = $(this).attr('href');
         if(current_href.trim() !== '#'){
           //This is not an anchor
@@ -349,7 +395,7 @@ jQuery(function($){
     if(typeof window.pmpro_pdf_editor !== 'undefined'){
       e.preventDefault();
       pmpro_run_default_unload = false;
-      
+
       var current_html = window.pmpro_pdf_editor.getHtml();
       var current_css =  window.pmpro_pdf_editor.getCss();
       jQuery('#template_content').val(current_html);
@@ -366,7 +412,7 @@ jQuery(function($){
       if(typeof success === 'function'){
         success();
       }
-      
+
       prompt.removeClass('active');
     });
 
