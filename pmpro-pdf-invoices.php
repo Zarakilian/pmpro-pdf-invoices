@@ -207,7 +207,7 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		$billing_details = '';
 	}
 
-	if ( ! empty($_GET['sub_action'] ) && $_GET['sub_action'] == 'view_sample' ) {
+	if ( isset( $_GET['sub_action'] ) && $_GET['sub_action'] == 'view_sample' ) {
 		$date = date_i18n( get_option( 'date_format' ), current_time( 'timestamp' ) );
 	} else {
 		$date = date_i18n( get_option( 'date_format' ), $order->getTimestamp() );
