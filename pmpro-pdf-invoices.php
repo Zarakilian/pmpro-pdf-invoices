@@ -297,6 +297,14 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 
 				$meta = get_user_meta( $order_data->user_id, $cleaned_up, true );
 
+				// Check if it's an array or not and handle accordingly.
+				if ( is_array( $meta ) ) {
+					$meta = implode( ', ', $meta );
+				}
+
+				// escape the meta data, but using wp_kses_post to allow for HTML in the meta data.
+				$meta = wp_kses_post( $meta );
+				
 				$body = str_replace( '{{'.$cleaned_up.'}}', $meta, $body );
 				
 			}
