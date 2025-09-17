@@ -731,7 +731,7 @@ add_shortcode( 'pmpropdf_download_list', 'pmpropdf_download_list_shortcode_handl
  * Shortcode handler for the download all as ZIP file
 */
 function pmpropdf_download_all_zip_shortcode_handler( $atts ){
-	$title = esc_html__("Download all PDF's as ZIP", 'pmpro-pdf-invoices');
+	$title = __("Download all PDF's as ZIP", 'pmpro-pdf-invoices');
 	if(!empty($atts['title'])){
 		$title = sanitize_text_field($atts['title']);
 	}
@@ -749,7 +749,7 @@ function pmpropdf_download_all_zip_shortcode_handler( $atts ){
 		);
 
 		if(!empty($invoices) && count($invoices) > 0){
-			return "<a href='?pmpro_pdf_invoices_action=download_zip' target='_BLANK'>$title</a>";
+			return "<a href='?pmpro_pdf_invoices_action=download_zip' target='_BLANK'>" . esc_html($title) . "</a>";
 		}
 	}
 	return '';
@@ -762,45 +762,48 @@ add_shortcode('pmpropdf_download_all_zip', 'pmpropdf_download_all_zip_shortcode_
  *
  * If so, this will go ahead and generate that plus download it
 */
+
 function pmpropdf_check_should_zip(){
-	if(!empty($_REQUEST['pmpro_pdf_invoices_action']) && $_REQUEST['pmpro_pdf_invoices_action'] === 'download_zip'){
-		if(class_exists('ZipArchive')){
-			if(class_exists('ZipArchive') && function_exists('pmpro_hasMembershipLevel') && pmpro_hasMembershipLevel()){
-				global $wpdb, $current_user;
+		if(!empty($_REQUEST['pmpro_pdf_invoices_action']) && $_REQUEST['pmpro_pdf_invoices_action'] === 'download_zip'){
+			if(class_exists('ZipArchive')){
+				if(class_exists('ZipArchive') && function_exists('pmpro_hasMembershipLevel') && pmpro_hasMembershipLevel()){
+					global $wpdb, $current_user;
 
-				$invoices = $wpdb->get_results("
-					SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
-					FROM $wpdb->pmpro_membership_orders
-					WHERE user_id = '$current_user->ID'
-					AND status NOT
-					IN('review', 'token', 'error')
-					ORDER BY timestamp DESC"
-				);
+					$invoices = $wpdb->get_results("
+						SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
+						FROM $wpdb->pmpro_membership_orders
+						WHERE user_id = '$current_user->ID'
+						AND status NOT
+						IN('review', 'token', 'error')
+						ORDER BY timestamp DESC"
+					);
 
-				if(!empty($invoices) && count($invoices) > 0){
-					$files = array();
-					foreach ($invoices as $key => $invoice) {
-						if ( file_exists( pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name($invoice->code) ) ){
-							$files[] = pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name($invoice->code);
+					if (!empty($invoices)) {
+					$zip = new ZipArchive;
+					$archive_name = tempnam(sys_get_temp_dir(), 'pmpropdf_') . '.zip';
+
+					if ($zip->open($archive_name, ZipArchive::CREATE) === TRUE) {
+						foreach ($invoices as $invoice) {
+							$filepath = pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name($invoice->code);
+
+							if (file_exists($filepath) && is_readable($filepath)) {
+								$zip->addFile($filepath, basename($filepath));
+							}
 						}
-					}
+						$zip->close();
 
+						if (file_exists($archive_name)) {
+							while (ob_get_level()) {
+								ob_end_clean(); 
+							}
 
-					$archive_name = 'invoices_' . time() . '.zip';
-					$archive = new ZipArchive;
-					if($archive->open($archive_name, ZipArchive::CREATE) === TRUE){
-						foreach ($files as $file) {
-							$archive->addFromString(basename($file), file_get_contents($file));
+							header('Content-Type: application/zip');
+							header('Content-Disposition: attachment; filename="invoices_' . time() . '.zip"');
+							header('Content-Length: ' . filesize($archive_name));
+							readfile($archive_name);
+							@unlink($archive_name);
+							exit;
 						}
-						$archive->close();
-
-						/** Send the headers and file data to the browser */
-						header('Content-Type: application/zip');
-						header('Content-disposition: attachment; filename='.$archive_name);
-						header('Content-Length: ' . filesize($archive_name));
-						readfile($archive_name);
-
-						@unlink($archive_name);
 					}
 				}
 			}
@@ -828,13 +831,17 @@ function pmpropdf_check_should_zip(){
 							}
 							$archive->close();
 
-							/** Send the headers and file data to the browser */
+							while (ob_get_level()) {
+								ob_end_clean();
+							}
+
 							header('Content-Type: application/zip');
 							header('Content-disposition: attachment; filename='.$archive_name);
 							header('Content-Length: ' . filesize($archive_name));
 							readfile($archive_name);
 
 							@unlink($archive_name);
+							exit;
 						}
 					}
 				}
