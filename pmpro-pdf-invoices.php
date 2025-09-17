@@ -659,6 +659,20 @@ function pmpropdf_download_list_shortcode_handler(){
 
 			$membership_level = $invoice->membership_level->name;
 			
+
+			// Set the display status and tag style.
+			if ( in_array( $invoice->status, array( '', 'success', 'cancelled' ) ) ) {
+				$display_status = esc_html__( 'Paid', 'pmpro-pdf-invoices' );
+				$tag_style = 'success';
+			} elseif ( $invoice->status == 'pending' ) {
+				// Some Add Ons set status to pending.
+				$display_status = esc_html__( 'Pending', 'pmpro-pdf-invoices' );
+				$tag_style = 'alert';
+			} elseif ( $invoice->status == 'refunded' ) {
+				$display_status = esc_html__( 'Refunded', 'pmpro-pdf-invoices' );
+				$tag_style = 'error';
+			}
+
 			if ( file_exists( pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name($invoice->code) ) ){
 				$content .= '<tr>';
 				$content .=		'<td><a href="' . esc_url( pmpro_url( "invoice", "?invoice=" . $invoice->code ) ) . '">' . date_i18n(get_option("date_format"), $invoice->timestamp) . '</a></td>';
