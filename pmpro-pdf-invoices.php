@@ -731,7 +731,7 @@ add_shortcode( 'pmpropdf_download_list', 'pmpropdf_download_list_shortcode_handl
  * Shortcode handler for the download all as ZIP file
 */
 function pmpropdf_download_all_zip_shortcode_handler( $atts ){
-	$title = __("Download all PDF's as ZIP", 'pmpro-pdf-invoices');
+	$title = esc_html__("Download all PDF's as ZIP", 'pmpro-pdf-invoices');
 	if(!empty($atts['title'])){
 		$title = sanitize_text_field($atts['title']);
 	}
