@@ -248,7 +248,7 @@ if (false !== $status && $status == 'valid') {
 									}	
 
 									if ( ! $expired && ! empty ( $expires ) && $expires !== 'lifetime' ) {
-										esc_html_e( sprintf( 'Expires on %s', $expires ), 'pmpro-pdf-invoices' );
+										printf( esc_html__( 'Expires on %s', 'pmpro-pdf-invoices' ), $expires );
 									}
 								} else {
 									?>
