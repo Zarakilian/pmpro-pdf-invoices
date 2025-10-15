@@ -234,8 +234,8 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 	$logo_image = !empty($logo_url) ? "<img style='max-width:300px;' src='$logo_url' />" : '';
 
 
-	$member_first_name = isset( $user->data->first_name ) ? sanitize_text_field( $user->data->first_name ) : '';
-	$member_last_name = isset( $user->data->last_name ) ? sanitize_text_field( $user->data->last_name ) : '';
+	$member_first_name = isset( $user->first_name ) ? sanitize_text_field( $user->first_name ) : '';
+	$member_last_name = isset( $user->last_name ) ? sanitize_text_field( $user->last_name ) : '';
 
 	// Items to replace.
 	$replacements = array(
@@ -259,20 +259,20 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		'{{display_name}}' => $user->data->display_name ?: '',
 		'{{levels_url}}' => pmpro_url( 'levels' ) ?: '',
 		'{{billing_address}}' => wp_kses_post( $billing_details ) ?: '', // The formatted billing address.
-		'{{billing_name}}' => isset( $order_data->billing->name ) ? sanitize_text_field( $order_data->billing->name ) : '',
-		'{{billing_street}}' => isset( $order_data->billing->street ) ? sanitize_text_field( $order_data->billing->street ) : '',
-		'{{billing_street2}}' => isset( $order_data->billing->street2 ) ? sanitize_text_field( $order_data->billing->street2 ) : '',
-		'{{billing_city}}' => isset( $order_data->billing->city ) ? sanitize_text_field( $order_data->billing->city ) : '',
-		'{{billing_state}}' => isset( $order_data->billing->state ) ? sanitize_text_field( $order_data->billing->state ) : '',
-		'{{billing_zip}}' => isset( $order_data->billing->zip ) ? sanitize_text_field( $order_data->billing->zip ) : '',
-		'{{billing_country}}' => isset( $order_data->billing->country ) ? sanitize_text_field( $order_data->billing->country ) : '',
-		'{{billing_phone}}' => isset( $order_data->billing->phone ) ? sanitize_text_field( $order_data->billing->phone ) : '',
+		'{{billing_name}}' => isset( $order->billing->name ) ? sanitize_text_field( $order->billing->name ) : '',
+		'{{billing_street}}' => isset( $order->billing->street ) ? sanitize_text_field( $order->billing->street ) : '',
+		'{{billing_street2}}' => isset( $order->billing->street2 ) ? sanitize_text_field( $order->billing->street2 ) : '',
+		'{{billing_city}}' => isset( $order->billing->city ) ? sanitize_text_field( $order->billing->city ) : '',
+		'{{billing_state}}' => isset( $order->billing->state ) ? sanitize_text_field( $order->billing->state ) : '',
+		'{{billing_zip}}' => isset( $order->billing->zip ) ? sanitize_text_field( $order->billing->zip ) : '',
+		'{{billing_country}}' => isset( $order->billing->country ) ? sanitize_text_field( $order->billing->country ) : '',
+		'{{billing_phone}}' => isset( $order->billing->phone ) ? sanitize_text_field( $order->billing->phone ) : '',
 		'{{order_link}}' => pmpro_login_url( pmpro_url( 'invoice', '?invoice=' . $order_data->code ) ),
 		'{{order_url}}' => pmpro_login_url( pmpro_url( 'invoice', '?invoice=' . $order_data->code ) ),
 		'{{name}}' => $user->data->display_name ?: '',
 		'{{first_name}}' => $member_first_name,
 		'{{last_name}}' => $member_last_name,
-		'{{full_name}}' => ! empty( $member_first_name . ' ' . $member_last_name ) ?: '',
+		'{{full_name}}' => trim( $member_first_name . ' ' . $member_last_name ),
 	);
 
 
