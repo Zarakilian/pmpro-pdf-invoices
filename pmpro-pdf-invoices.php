@@ -5,7 +5,7 @@
  * Plugin URI: https://yoohooplugins.com/plugins/pmpro-pdf-invoices/
  * Author: Yoohoo Plugins
  * Author URI: https://yoohooplugins.com
- * Version: 1.24
+ * Version: 1.23
  * License: GPLv2 or later
  * Tested up to: 6.7
  * Requires PHP: 7.2
