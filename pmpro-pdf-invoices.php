@@ -352,19 +352,6 @@ function pmpropdf_generate_sample_pdf(){
 		$order = new MemberOrder();
 		$order->get_test_order();
 
-		/* Fill the missing details in the order, that are needed for PDF */
-		$order->code = $order->getRandomCode();
-		$order->total = $order->InitialPayment;
-		$order->subtotal = $order->total;
-		$order->tax = 0;
-
-		/* Cross populate the billing object */
-		if ( ! empty( $order->billing ) && is_object( $order->billing ) ) {
-			foreach( $order->billing as $key => $value ) {
-				$dynamiKey = "billing_{$key}";
-				$order->{$dynamiKey} = $value;
-			}
-		}
 		$dompdf = pmpropdf_generate_pdf( $order, true );
 
 		$dompdf->stream( 'invoice_sample.pdf' );

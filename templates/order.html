@@ -1,98 +1,91 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&family=Noto+Sans:wght@300;400;700&display=swap" rel="stylesheet">
-		<meta content="width=device-width, initial-scale=1.0" name="viewport">
-		<meta http-equiv="content-type" content="text-html; charset=utf-8">
-		<style type="text/css">
-			html, div, p, table {
-				font-family: 'Open Sans', sans-serif;
-			}
-			#invoice, table{
-				width:700px;
-			}
+  <head>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta http-equiv="content-type" content="text-html; charset=utf-8">
+    <style type="text/css">
+      html, div, p, table {
+        font-family: 'Noto Sans', sans-serif;
+      }
 
-			#invoice{
-				text-align:center;
-			}
+      #invoice, .meta-table {
+        width: 700px;
+        margin: 0 auto;
+      }
 
-			#heading{
-				font-size:18px;
-				color:#555;
-				background:#EEE;
-			}
+      #invoice th, #invoice td { text-align: left; }
 
-			#heading th{
-				padding:5px;
-				border-radius:2px;
-			}
+      .alignright { text-align: right !important; }
+      .alignleft  { text-align: left !important; }
 
-			#heading tr{
-				margin-bottom:10px;
-			}
+      table { border-collapse: collapse; }
 
-			.alignright{
-				text-align: right;
-			}
+      #heading {
+        font-size: 18px;
+        color: #555;
+        background: #EEE;
+      }
+      #heading th {
+        padding: 5px;
+        border-radius: 2px;
+      }
 
-			.alignleft{
-				text-align:left;
-			}
+      .row { border-bottom: 1px solid #eee; }
+      .row td, .row th { padding: 12px; }
 
-			table {
-				border-collapse: collapse;
-			}
+      #invoice tr > td:last-child,
+      #invoice tr > th:last-child {
+        text-align: right !important;
+      }
+    </style>
+  </head>
+  <body>
 
-			.row{
-				border-bottom:1px solid #eee;
-			}
+    <div>{{logo_image}}</div>
+    <h1 style="text-align:center; margin: 0 auto;">{{site}}</h1>
 
-			.row td, .row th{
-				padding:12px;
-			}
-		</style>
-	</head>
-	<body>
+    <table class="meta-table">
+      <tr>
+        <td><strong>Invoice #:</strong> <span>{{invoice_code}}</span></td>
+      </tr>
+      <tr>
+        <td><strong>Date:</strong> <span>{{invoice_date}}</span></td>
+      </tr>
+      <tr>
+        <td><strong>Payment Method:</strong> <span>{{payment_method}}</span></td>
+      </tr>
+    </table>
 
-		<div>{{logo_image}}</div>
-		<h1>{{site}}</h1>
+    <br/>
 
-		<table>
-			<tr>
-				<td><strong>Invoice #:</strong> <span>{{invoice_code}}</span></td>
-			</tr>
-			<tr>
-				<td><strong>Date:</strong> <span>{{invoice_date}}</span></td>
-			</tr>
-			<tr>
-				<td><strong>Payment Method:</strong> <span>{{payment_method}}</span></td>
-			</tr>
-		</table>
-		<br/>
+    <div class="meta-table">{{billing_address}}</div>
 
-		<span>{{billing_address}}</span>
+    <table id="invoice">
+      <tr id="heading" class="row">
+        <th class="alignleft" colspan="2"><div>Item</div></th>
+        <th class="alignright"><div>Price</div></th>
+      </tr>
 
-		<table id="invoice">
-			<tr id="heading" class="row">
-				<th class="alignleft" colspan="2"><div>Item</div></th>
-				<th class="alignright"><span class="alignright"><div>Price</div></span></th>
-			</tr>
-			<tr class="row">
-				<td colspan="2" class="alignleft"><div>{{membership_level}}</div></td>
-				<td class="alignright" style="padding-left:0;"><div>{{total}}</div></td>
-			</tr>
-			<tr  class="alignright row">
-				<th colspan="2"><div>Subtotal</div></th>
-				<td><div>{{subtotal}}</div></td>
-			</tr>
-			<tr class="alignright row">
-				<th colspan="2"><div>Tax</div></th>
-				<td ><div>{{tax}}</div></td>
-			</tr>
-			<tr class="alignright row">
-				<th colspan="2"><div>Total</div></th>
-				<th><div>{{total}}</div></th>
-			</tr>
-		</table>
-	</body>
+      <tr class="row">
+        <td colspan="2" class="alignleft"><div>{{membership_level}}</div></td>
+        <td class="alignright"><div>{{total}}</div></td>
+      </tr>
+
+      <tr class="row">
+        <th colspan="2" class="alignright"><div>Subtotal</div></th>
+        <td class="alignright"><div>{{subtotal}}</div></td>
+      </tr>
+
+      <tr class="row">
+        <th colspan="2" class="alignright"><div>Tax</div></th>
+        <td class="alignright"><div>{{tax}}</div></td>
+      </tr>
+
+      <tr class="row">
+        <th colspan="2" class="alignright"><div>Total</div></th>
+        <th class="alignright"><div>{{total}}</div></th>
+      </tr>
+    </table>
+  </body>
 </html>
