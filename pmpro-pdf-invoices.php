@@ -534,20 +534,36 @@ add_action( 'wp_ajax_pmpropdf_batch_processor', 'pmpropdf_batch_processor' );
  * @since 1.2
  */
 function pmpropdf_download_invoice( $order_code ) {
-$invoice_name = pmpropdf_generate_invoice_name( $order_code );
-$file_path    = pmpropdf_get_invoice_directory_or_url() . $invoice_name;
+if( file_exists( pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name( $order_code ) ) ) {
+		$invoice_name = pmpropdf_generate_invoice_name( $order_code );
+		$download_url = esc_url( pmpropdf_get_invoice_directory_or_url( true ) . $invoice_name );
+		$access_key = pmpropdf_get_rewrite_token();
 
-// Check the file exists.
-   if ( file_exists( $file_path ) ) {
-       header('Content-type: application/pdf');
-       header('Content-Disposition: attachment; filename="'.$invoice_name.'"');
-       readfile($file_path);
-       exit;
-   } else {
-       // Log an error if the file doesn't exist when it should
-       error_log("PMPro PDF Invoice Error: Attempted to download non-existent file: $file_path for order code: $order_code");
-   }
+		$download_url .= "?access=$access_key";
 
+		header('Content-type: application/pdf');
+		header('Content-Disposition: attachment; filename="'.$invoice_name.'"');
+		readfile($download_url);
+
+		/**
+		 * This is removed to support the force htaccess redirect
+		 * Auto download is now automatically handled in the htaccess file
+		 *
+		 * -------------
+		 * header( 'Content-Description: File Transfer' );
+		 * header( 'Content-Type: application/octet-stream' );
+		 * header( 'Content-Disposition: attachment; filename="'.basename( $invoice_name ).'"' );
+		 * header( 'Expires: 0' );
+		 * header( 'Cache-Control: must-revalidate' );
+		 * header( 'Pragma: public' );
+		 * header( 'Content-Length: ' . filesize( $download_url ) );
+		 * flush(); // Flush system output buffer
+		 * readfile( $download_url );
+		 * -------------
+		*/
+
+		exit;
+	  }
 }
 
 /**

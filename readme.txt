@@ -25,9 +25,11 @@ Paid Memberships Pro PDF Invoices plugin will generate PDF Invoices for members 
 Yes the PDF templates are customizable and use general HTML code with custom tags to replace values in the template.
 
 == Changelog ==
-= 1.23 - 2024-11-06 =
+= TBD =
 * BUG FIX: Prevent errors when accessing billing details for orders without them (e.g., free signups).
 * BUG FIX: Resolve issue causing empty PDF downloads by reading files directly instead of via URL, improving compatibility (especially with Apache).
+
+= 1.23 - 2024-11-06 =
 * ENHANCEMENT: Added more template variables, see documentation - https://yoohooplugins.com/documentation/getting-started-with-paid-memberships-pro-pdf-invoices/ (Thanks @GCalToolkit)
 * BUG FIX: Fixed warning where $content was undefined in cases. (Thanks @toby-pondr)
 * BUG FIX: Fixed warnings for PHP 8.0+ (Thanks @mircobabini)
