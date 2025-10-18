@@ -8,8 +8,6 @@ jQuery(function(){
     jQuery(document).ready(function(){
         var activeTab = window.location.hash;
         activeTab = activeTab.trim();
-
-        console.log(activeTab);
         
         if(activeTab !== "" && activeTab.indexOf('#tab_') !== -1){
             activeTab = activeTab.replace('#tab_', '');
