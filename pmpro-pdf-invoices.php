@@ -626,13 +626,17 @@ function pmpropdf_download_list_shortcode_handler(){
 
 	$limit = apply_filters( 'pmpropdf_invoice_table_limit', 15 );
 
-	$invoices = $wpdb->get_results("
-		SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
-		FROM $wpdb->pmpro_membership_orders
-		WHERE user_id = '$current_user->ID'
-		AND status NOT
-		IN('review', 'token', 'error')
-		ORDER BY timestamp DESC LIMIT " . $limit
+	$invoices = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
+			FROM $wpdb->pmpro_membership_orders
+			WHERE user_id = %d
+			AND status NOT
+			IN('review', 'token', 'error')
+			ORDER BY timestamp DESC LIMIT %d",
+			$current_user->ID,
+			$limit
+		)
 	);
 	if(!empty($invoices)){
 		$content = '';
@@ -724,13 +728,16 @@ function pmpropdf_download_all_zip_shortcode_handler( $atts ){
 	if(class_exists('ZipArchive') && is_user_logged_in() ) {
 		global $wpdb, $current_user;
 
-		$invoices = $wpdb->get_results("
-			SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
-			FROM $wpdb->pmpro_membership_orders
-			WHERE user_id = '$current_user->ID'
-			AND status NOT
-			IN('review', 'token', 'error')
-			ORDER BY timestamp DESC"
+		$invoices = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
+				FROM $wpdb->pmpro_membership_orders
+				WHERE user_id = %d
+				AND status NOT
+				IN('review', 'token', 'error')
+				ORDER BY timestamp DESC",
+				$current_user->ID
+			)
 		);
 
 		if(!empty($invoices) && count($invoices) > 0){
@@ -754,13 +761,16 @@ function pmpropdf_check_should_zip(){
 				if(class_exists('ZipArchive') && function_exists('pmpro_hasMembershipLevel') && pmpro_hasMembershipLevel()){
 					global $wpdb, $current_user;
 
-					$invoices = $wpdb->get_results("
-						SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
-						FROM $wpdb->pmpro_membership_orders
-						WHERE user_id = '$current_user->ID'
-						AND status NOT
-						IN('review', 'token', 'error')
-						ORDER BY timestamp DESC"
+					$invoices = $wpdb->get_results(
+						$wpdb->prepare(
+							"SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
+							FROM $wpdb->pmpro_membership_orders
+							WHERE user_id = %d
+							AND status NOT
+							IN('review', 'token', 'error')
+							ORDER BY timestamp DESC",
+							$current_user->ID
+						)
 					);
 
 					if (!empty($invoices)) {
