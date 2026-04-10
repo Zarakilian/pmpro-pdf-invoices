@@ -421,6 +421,25 @@ if (false !== $status && $status == 'valid') {
 				<br><br>
 				<a class='button' href='?page=pmpro_pdf_invoices_license_key&sub_action=regen_rewrites'><?php esc_html_e( 'Regenerate Rewrite File', 'pmpro-pdf-invoices' ); ?></a> <br>
 				<br>
+				<strong><?php esc_html_e( 'PDF Invoice Coverage', 'pmpro-pdf-invoices' ); ?></strong><br>
+				<?php
+				$coverage = pmpropdf_get_pdf_coverage_stats();
+				if ( $coverage ) {
+					printf(
+						/* translators: 1: number of orders with PDFs, 2: total number of orders */
+						esc_html__( '%1$d of %2$d orders have PDF invoices generated.', 'pmpro-pdf-invoices' ),
+						$coverage['with_pdf'],
+						$coverage['total']
+					);
+					if ( $coverage['total'] > 0 ) {
+						$percentage = round( ( $coverage['with_pdf'] / $coverage['total'] ) * 100, 1 );
+						echo ' <strong>(' . esc_html( $percentage ) . '%)</strong>';
+					}
+				} else {
+					esc_html_e( 'Unable to calculate coverage stats.', 'pmpro-pdf-invoices' );
+				}
+				?>
+				<br><br>
 			</div>
 
 			<div class='wp-editor-container pmpropdf_option_section' data-tab='4'>

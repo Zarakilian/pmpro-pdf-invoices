@@ -449,6 +449,35 @@ function pmpropdf_generate_invoice_name($order_code){
 }
 
 /**
+ * Get PDF coverage stats: how many orders have PDFs generated.
+ *
+ * @since 1.24
+ * @return array|false Array with 'total' and 'with_pdf' keys, or false on failure.
+ */
+function pmpropdf_get_pdf_coverage_stats() {
+	global $wpdb;
+
+	$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->pmpro_membership_orders" );
+	$invoice_dir = pmpropdf_get_invoice_directory_or_url();
+
+	$with_pdf = 0;
+	$orders = $wpdb->get_results( "SELECT code FROM $wpdb->pmpro_membership_orders" );
+	if ( $orders ) {
+		foreach ( $orders as $order ) {
+			$invoice_name = pmpropdf_generate_invoice_name( $order->code );
+			if ( file_exists( $invoice_dir . $invoice_name ) ) {
+				$with_pdf++;
+			}
+		}
+	}
+
+	return array(
+		'total'    => $total,
+		'with_pdf' => $with_pdf,
+	);
+}
+
+/**
  * Get batch of orders
  * Return the ordders for loop processing
 */
