@@ -13,10 +13,14 @@
     if ( ! empty( $order_data ) ) {
         global $current_user;
 
-        if ( $current_user->ID === intval( $order_data[0]->user_id ) || current_user_can( 'manage_options' ) ){
-            //Continue to download the file.
-          pmpropdf_download_invoice( $order_code );
+        if ( $current_user->ID === intval( $order_data[0]->user_id ) || current_user_can( 'pmpro_orders' ) ) {
+            // Generate the PDF on-demand if it doesn't exist yet.
+            $invoice_path = pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name( $order_code );
+            if ( ! file_exists( $invoice_path ) ) {
+                pmpropdf_generate_pdf( $order_data[0] );
+            }
+            pmpropdf_download_invoice( $order_code );
         }
     } else {
-        die( __( 'Invoice doesnt exist', 'pmpro-pdf-invoices' ) );
+        die( __( 'Invoice does not exist.', 'pmpro-pdf-invoices' ) );
     }
