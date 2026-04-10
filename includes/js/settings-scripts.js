@@ -1,147 +1,174 @@
-jQuery(function(){
-    pmpropdf_js.batch_process = {
-        total_count : 0,
-        total_created : 0,
-        total_skipped : 0
-    };
+jQuery( function ( $ ) {
 
-    jQuery(document).ready(function(){
-        var activeTab = window.location.hash;
-        activeTab = activeTab.trim();
-        
-        if(activeTab !== "" && activeTab.indexOf('#tab_') !== -1){
-            activeTab = activeTab.replace('#tab_', '');
-            jQuery('.pmpropdf_tab[data-tab="' + activeTab + '"]').click();
-        }
-    });
+	/* -------------------------------------------------------------------------
+	   Batch state
+	------------------------------------------------------------------------- */
+	pmpropdf_js.batch_process = {
+		total_count:   0,
+		total_created: 0,
+		total_skipped: 0
+	};
 
-    jQuery('.pmpropdf_tab').on('click', function(){
-        jQuery('.pmpropdf_tab').removeClass('active');
-        jQuery(this).addClass('active');
+	/* -------------------------------------------------------------------------
+	   Generate / regenerate invoices
+	------------------------------------------------------------------------- */
+	$( '.generate_missing_logs' ).on( 'click', function ( e ) {
+		e.preventDefault();
 
-        var tab_i = jQuery(this).attr('data-tab');
+		var force = $( this ).data( 'force' ) === 1 || $( this ).data( 'force' ) === '1';
 
-        jQuery('.pmpropdf_option_section').removeClass('visible');
-        jQuery('.pmpropdf_option_section[data-tab=' + tab_i + ']').addClass('visible');
-        window.location.hash = 'tab_' + tab_i;
-    });
+		if ( force && ! confirm( 'This will delete and regenerate every existing PDF invoice. This cannot be undone.\n\nAre you sure you want to continue?' ) ) {
+			return;
+		}
 
-    jQuery('.generate_missing_logs').on('click', function(e){
-        e.preventDefault();
-        jQuery('.missing_invoice_log').html('<div class="item">Generating Missing Invoices...</div>');
-        pmpropdf_ajax_batch_loop(100, 0);
-    });
+		pmpropdf_js.batch_process = { total_count: 0, total_created: 0, total_skipped: 0 };
+		$( '.missing_invoice_log' ).html( '<div class="item">' + ( force ? 'Regenerating all invoices&hellip;' : 'Generating missing invoices&hellip;' ) + '</div>' );
+		pmpropdf_ajax_batch_loop( 100, 0, force ? '1' : '0' );
+	} );
 
-    jQuery('.pmpropdf_logo_upload').on('click', function(e){
-        e.preventDefault();
-        pmpropdf_logo_uploader();
-    });
+	/* -------------------------------------------------------------------------
+	   Logo uploader
+	------------------------------------------------------------------------- */
+	$( '.pmpropdf_logo_upload' ).on( 'click', function ( e ) {
+		e.preventDefault();
+		pmpropdf_logo_uploader();
+	} );
 
-    jQuery('.pmpropdf_logo_remove').on('click', function(e){
-        e.preventDefault();
-        jQuery('.logo_holder').html('');
-        jQuery('#logo_url').val('');
-    });
+	$( '.pmpropdf_logo_remove' ).on( 'click', function ( e ) {
+		e.preventDefault();
+		$( '.logo_holder' ).html( '<em>No logo selected.</em>' );
+		$( '#logo_url' ).val( '' );
+	} );
 
-    jQuery('.reset_template_btn').on('click', function(e){
-        e.preventDefault();
-        var url = jQuery(this).attr('href');
+	/* -------------------------------------------------------------------------
+	   Reset template – confirm before navigating
+	------------------------------------------------------------------------- */
+	$( '.reset_template_btn' ).on( 'click', function ( e ) {
+		e.preventDefault();
+		if ( confirm( 'This cannot be undone. Your current custom template will be deleted.\n\nAre you sure you want to continue?' ) ) {
+			window.location = $( this ).attr( 'href' );
+		}
+	} );
 
-        var continuePrompt = confirm("This cannot be undone, current template will be deleted.\n\nAre you sure you would like to continue? ");
+	/* -------------------------------------------------------------------------
+	   Delete all PDFs – confirm before navigating
+	------------------------------------------------------------------------- */
+	$( '.pmpropdf-delete-all-btn' ).on( 'click', function ( e ) {
+		e.preventDefault();
+		if ( confirm( 'This will permanently delete all stored PDF invoice files from the server. This cannot be undone.\n\nAre you sure you want to continue?' ) ) {
+			window.location = $( this ).attr( 'href' );
+		}
+	} );
 
-        if (continuePrompt == true) {
-            window.location = url;
-        }
-    });
+	/* -------------------------------------------------------------------------
+	   Template selector modal
+	------------------------------------------------------------------------- */
+	$( '.select_template_btn' ).on( 'click', function ( e ) {
+		e.preventDefault();
+		$( '#pmpropdf-template-selector' ).show();
+		$( 'body' ).addClass( 'pmpropdf-modal-open' );
+	} );
 
-    jQuery('.select_template_btn').on('click', function(e){
-        jQuery('.pmprofpdf_template_selector').show();
-    });
+	$( '#pmpropdf-template-selector' ).on( 'click', '.pmpropdf-modal__close, .pmpropdf-modal__backdrop', function () {
+		$( '#pmpropdf-template-selector' ).hide();
+		$( 'body' ).removeClass( 'pmpropdf-modal-open' );
+	} );
 
-    jQuery('.pmprofpdf_template_selector .close_btn').on('click', function(e){
-        jQuery('.pmprofpdf_template_selector').hide();
-    });
+	$( document ).on( 'keydown', function ( e ) {
+		if ( e.key === 'Escape' ) {
+			$( '#pmpropdf-template-selector' ).hide();
+			$( 'body' ).removeClass( 'pmpropdf-modal-open' );
+		}
+	} );
 
-    jQuery('.template_tile').on('click', function(e){
-        var template = jQuery(this).attr('data-template');
-        window.location = '?page=pmpro_pdf_invoices_license_key&sub_action=set_template&template=' + template;
-    });
-});
+	$( '.pmpropdf-template-tile' ).on( 'click', function () {
+		var template = $( this ).data( 'template' );
+		var url      = new URL( window.location.href );
+		url.searchParams.set( 'sub_action', 'set_template' );
+		url.searchParams.set( 'template', template );
+		window.location = url.toString();
+	} );
 
-function pmpropdf_ajax_batch_loop(batch_size, batch_no){
-    jQuery.ajax({
-        url : pmpropdf_js.ajax_url,
-        type : 'post',
-        data : {
-            action : 'pmpropdf_batch_processor',
-            batch_size : batch_size,
-            batch_no : batch_no
-        },
-        success : function( response ) {
-            response = JSON.parse(response);
+} );
 
-            if(typeof response.error !== 'undefined'){
-                jQuery('.missing_invoice_log').html("").append('<div class="item">' + response.error + '</div>');
-            } else {
-                pmpropdf_js.batch_process.total_count += typeof response.batch_count !== 'undefined' ? response.batch_count : 0;
-                pmpropdf_js.batch_process.total_created += typeof response.created !== 'undefined' ? response.created : 0;
-                pmpropdf_js.batch_process.total_skipped += typeof response.skipped !== 'undefined' ? response.skipped : 0;
+/* ---------------------------------------------------------------------------
+   AJAX batch loop
+--------------------------------------------------------------------------- */
+function pmpropdf_ajax_batch_loop( batch_size, batch_no, force ) {
+	force = force || '0';
 
-                pmpropdf_update_batch_stats();
+	jQuery.ajax( {
+		url:  pmpropdf_js.ajax_url,
+		type: 'post',
+		data: {
+			action:     'pmpropdf_batch_processor',
+			batch_size: batch_size,
+			batch_no:   batch_no,
+			force:      force
+		},
+		success: function ( response ) {
+			response = JSON.parse( response );
 
-                if(typeof response.batch_no !== 'undefined' && typeof response.batch_count !== 'undefined'){
-                    if(response.batch_count >= batch_size){
-                        //Iterate another loop
-                        jQuery('.missing_invoice_log').append('<div class="item">Processing...</div>');
-                        pmpropdf_ajax_batch_loop(batch_size, response.batch_no+1);
-                    } else {
-                        //Show complete message
-                        if(pmpropdf_js.batch_process.total_created == 0){
-                            jQuery('.missing_invoice_log').append('<div class="item">No missing invoices!</div>');
-                        } else {
-                            jQuery('.missing_invoice_log').append('<div class="item">Processing Complete!</div>');
-                        }
-                    }
-                }
-            }
+			if ( typeof response.error !== 'undefined' ) {
+				jQuery( '.missing_invoice_log' ).html( '<div class="item">' + response.error + '</div>' );
+				return;
+			}
 
-        }
-    });
+			pmpropdf_js.batch_process.total_count   += response.batch_count || 0;
+			pmpropdf_js.batch_process.total_created += response.created     || 0;
+			pmpropdf_js.batch_process.total_skipped += response.skipped     || 0;
+
+			pmpropdf_update_batch_stats();
+
+			if ( typeof response.batch_count !== 'undefined' && response.batch_count >= batch_size ) {
+				pmpropdf_ajax_batch_loop( batch_size, response.batch_no + 1, force );
+			} else {
+				var msg;
+				if ( force === '1' ) {
+					msg = 'Regeneration complete.';
+				} else {
+					msg = pmpropdf_js.batch_process.total_created === 0
+						? 'No missing invoices found.'
+						: 'Processing complete.';
+				}
+				jQuery( '.missing_invoice_log' ).append( '<div class="item">' + msg + '</div>' );
+			}
+		}
+	} );
 }
 
-function pmpropdf_update_batch_stats(){
-    jQuery('.missing_invoice_log').html(
-        '<div class="item">' +
-            'Processed: ' + pmpropdf_js.batch_process.total_count +
-            '<br>Created: ' + pmpropdf_js.batch_process.total_created +
-            '<br>Skipped: ' + pmpropdf_js.batch_process.total_skipped +
-        '</div><br>'
-    );
+function pmpropdf_update_batch_stats() {
+	jQuery( '.missing_invoice_log' ).html(
+		'<div class="item">' +
+			'Processed: ' + pmpropdf_js.batch_process.total_count   + '<br>' +
+			'Created: '   + pmpropdf_js.batch_process.total_created + '<br>' +
+			'Skipped: '   + pmpropdf_js.batch_process.total_skipped +
+		'</div>'
+	);
 }
 
-function pmpropdf_logo_uploader(){
-    var file_frame, image_data;
-    if(undefined !== file_frame) {
-        file_frame.open();
-        return;
-    }
+/* ---------------------------------------------------------------------------
+   Logo uploader (WP media)
+--------------------------------------------------------------------------- */
+function pmpropdf_logo_uploader() {
+	var file_frame;
 
-    file_frame = wp.media.frames.file_frame = wp.media({
-        title: 'Select Logo for use in Invoice',
-        button: {
-           text: 'Set Logo'
-        },
-        multiple: false,
-    });
+	if ( typeof file_frame !== 'undefined' ) {
+		file_frame.open();
+		return;
+	}
 
+	file_frame = wp.media.frames.file_frame = wp.media( {
+		title:    'Select Invoice Logo',
+		button:   { text: 'Use as Logo' },
+		multiple: false
+	} );
 
-    file_frame.on( 'select', function() {
-      var attachment = file_frame.state().get('selection').first().toJSON();
+	file_frame.on( 'select', function () {
+		var attachment = file_frame.state().get( 'selection' ).first().toJSON();
+		jQuery( '.logo_holder' ).html( '<img src="' + attachment.url + '" alt="" style="max-width:200px; display:block; margin-bottom:8px;" />' );
+		jQuery( '#logo_url' ).val( attachment.url );
+	} );
 
-      jQuery('.logo_holder').html('<img src="'+attachment.url+'" alt="" style="max-width:150px;"/>');
-      jQuery('#logo_url').val(attachment.url);
-    });
-
-    // Now display the actual file_frame
-    file_frame.open();
+	file_frame.open();
 }
