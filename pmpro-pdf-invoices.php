@@ -1016,13 +1016,13 @@ add_action( 'admin_enqueue_scripts', 'pmpropdf_enqueue_scripts_styles' );
  * @since 1.2
  */
 function pmpropdf_ajax_generate_pdf_invoice() {
-	$order_code = sanitize_text_field( $_REQUEST['order_code'] );
-	$last_order = pmpropdf_get_order_by_code($order_code);
-
 	// check if nonce is valid
 	if ( ! wp_verify_nonce( $_REQUEST['nonce'], 'pmpro-pdf-invoices-single' ) ) {
 		wp_die( __( 'Nonce is invalid', 'pmpro-pdf-invoices' ) );
 	}
+
+	$order_code = sanitize_text_field( $_REQUEST['order_code'] );
+	$last_order = pmpropdf_get_order_by_code($order_code);
 
 	// Bail if order is empty / doesn't exist.
 	// We do this early to avoid initializing the DomPDF library if it is unneeded
