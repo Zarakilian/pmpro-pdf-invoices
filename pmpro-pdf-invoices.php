@@ -142,11 +142,13 @@ function pmpropdf_attach_pdf_email( $attachments, $email ) {
 	}
 
 	// Make sure there is an order code available, otherwise get it from the user.
-	if ( empty( $email->data['order_code'] ) ) {
+	// Check both 'order_id' (used by PMPro) and 'order_code' (legacy/custom) for compatibility.
+	if ( empty( $email->data['order_id'] ) && empty( $email->data['order_code'] ) ) {
 		$user = get_user_by( "email", $email->data['user_email'] );
 		$last_order = pmpropdf_get_last_order( $user->ID );
 	} else {
-		$order_code = $email->data['order_code'];
+		// Prefer 'order_id' as that's what PMPro provides, fall back to 'order_code' for legacy support.
+		$order_code = ! empty( $email->data['order_id'] ) ? $email->data['order_id'] : $email->data['order_code'];
 		$last_order = pmpropdf_get_order_by_code($order_code);
 	}
 
