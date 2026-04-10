@@ -72,7 +72,25 @@ add_action( 'init', 'pmpropdf_init' );
 
 
 function pmpropdf_settings_page() {
-	add_options_page( 'Paid Memberships Pro PDF Invoice License Settings', 'PMPro PDF Invoice', 'manage_options', 'pmpro_pdf_invoices_license_key', 'pmpro_pdf_invoice_settings_page' );
+	// Register under the Memberships menu if PMPro is active, otherwise fall back to Settings.
+	if ( function_exists( 'pmpro_getOption' ) ) {
+		add_submenu_page(
+			'pmpro-dashboard',
+			__( 'PDF Invoices', 'pmpro-pdf-invoices' ),
+			__( 'PDF Invoices', 'pmpro-pdf-invoices' ),
+			'manage_options',
+			'pmpro_pdf_invoices_license_key',
+			'pmpro_pdf_invoice_settings_page'
+		);
+	} else {
+		add_options_page(
+			__( 'PMPro PDF Invoices Settings', 'pmpro-pdf-invoices' ),
+			__( 'PMPro PDF Invoices', 'pmpro-pdf-invoices' ),
+			'manage_options',
+			'pmpro_pdf_invoices_license_key',
+			'pmpro_pdf_invoice_settings_page'
+		);
+	}
 }
 add_action( 'admin_menu', 'pmpropdf_settings_page' );
 
@@ -492,53 +510,67 @@ function pmpropdf_get_order_batch($batch_size = 100, $batch_no = 0){
 }
 
 /**
- * Process a batch of orders
- * Check if the current order has a PDF generated
- * Generate one if this is not the case
- * Skip it if we have this invoice already created
-*/
-function pmpropdf_process_batch($batch_size = 100, $batch_no = 0){
+ * Process a batch of orders.
+ * Generates PDFs for orders that don't have one.
+ * When $force is true, existing PDFs are deleted and regenerated.
+ *
+ * @param int  $batch_size Number of orders per batch.
+ * @param int  $batch_no   Zero-based batch offset.
+ * @param bool $force      When true, overwrite existing PDFs.
+ */
+function pmpropdf_process_batch( $batch_size = 100, $batch_no = 0, $force = false ) {
 	$output_array = array(
-		'skipped' => 0,
-		'created' => 0,
-		'batch_no' => $batch_no,
-		'batch_count' => 0
+		'skipped'     => 0,
+		'created'     => 0,
+		'batch_no'    => $batch_no,
+		'batch_count' => 0,
 	);
-	try{
+
+	try {
 		$invoice_dir = pmpropdf_get_invoice_directory_or_url();
+		$batch       = pmpropdf_get_order_batch( $batch_size, $batch_no );
 
-		$batch = pmpropdf_get_order_batch($batch_size, $batch_no);
-		foreach ($batch as $order_data) {
-			$invoice_name = pmpropdf_generate_invoice_name($order_data->code);
+		foreach ( $batch as $order_data ) {
+			$invoice_name = pmpropdf_generate_invoice_name( $order_data->code );
+			$invoice_path = $invoice_dir . $invoice_name;
 
-			if(file_exists($invoice_dir . $invoice_name)){
-				$output_array['skipped'] += 1;
-			} else {
-				$path = pmpropdf_generate_pdf($order_data);
-				$output_array['created'] += 1;
+			if ( file_exists( $invoice_path ) ) {
+				if ( $force ) {
+					// Delete existing file so it is regenerated fresh.
+					unlink( $invoice_path );
+				} else {
+					$output_array['skipped'] += 1;
+					continue;
+				}
 			}
+
+			$path = pmpropdf_generate_pdf( $order_data );
+			$output_array['created'] += 1;
 		}
 
-		$output_array['batch_count'] = count($batch);
-	} catch (Exception $ex){
-		$output_array['error'] = "An unexpected error occurred, we were not able to complete PDF generation";
-	} catch (Error $err){
-		$output_array['error'] = "An unexpected error occurred, we were not able to complete PDF generation";
+		$output_array['batch_count'] = count( $batch );
+	} catch ( Exception $ex ) {
+		$output_array['error'] = 'An unexpected error occurred. PDF generation could not be completed.';
+	} catch ( Error $err ) {
+		$output_array['error'] = 'An unexpected error occurred. PDF generation could not be completed.';
 	}
 
 	return $output_array;
 }
 
 /**
- * AJAX Loop
-*/
+ * AJAX handler for the batch PDF processor.
+ * Accepts an optional 'force' POST parameter to regenerate existing PDFs.
+ */
 function pmpropdf_batch_processor() {
-	if(defined('DOING_AJAX') && DOING_AJAX){
-		$batch_size = !empty($_POST['batch_size']) ? intval($_POST['batch_size']) : 100;
-		$batch_no = !empty($_POST['batch_no']) ? intval($_POST['batch_no']) : 0;
-		$batch_output = pmpropdf_process_batch($batch_size, $batch_no);
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		$batch_size = ! empty( $_POST['batch_size'] ) ? intval( $_POST['batch_size'] ) : 100;
+		$batch_no   = ! empty( $_POST['batch_no'] ) ? intval( $_POST['batch_no'] ) : 0;
+		$force      = ! empty( $_POST['force'] ) && $_POST['force'] === '1';
 
-		echo json_encode($batch_output);
+		$batch_output = pmpropdf_process_batch( $batch_size, $batch_no, $force );
+
+		echo json_encode( $batch_output );
 	}
 	die();
 }
@@ -552,14 +584,12 @@ add_action( 'wp_ajax_pmpropdf_batch_processor', 'pmpropdf_batch_processor' );
 function pmpropdf_download_invoice( $order_code ) {
 if( file_exists( pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name( $order_code ) ) ) {
 		$invoice_name = pmpropdf_generate_invoice_name( $order_code );
-		$download_url = esc_url( pmpropdf_get_invoice_directory_or_url( true ) . $invoice_name );
-		$access_key = pmpropdf_get_rewrite_token();
+		$invoice_path = pmpropdf_get_invoice_directory_or_url() . $invoice_name;
 
-		$download_url .= "?access=$access_key";
-
-		header('Content-type: application/pdf');
-		header('Content-Disposition: attachment; filename="'.$invoice_name.'"');
-		readfile($download_url);
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: attachment; filename="' . $invoice_name . '"' );
+		header( 'Content-Length: ' . filesize( $invoice_path ) );
+		readfile( $invoice_path );
 
 		/**
 		 * This is removed to support the force htaccess redirect
@@ -1106,7 +1136,7 @@ function pmpropdf_after_plugin_row( $plugin_file, $plugin_data, $status ) {
 			<td class="plugin-update colspanchange" colspan="4">
 				<div class="update-message notice inline notice-warning notice-alt">
 					<p><?php 
-					echo sprintf( __( '%s your copy of PMPro PDF Invoices to receive access to automatic upgrades and support. Need a license key? %s', 'pmpro-pdf-invoices' ), '<a href="' . admin_url( 'options-general.php?page=pmpro_pdf_invoices_license_key#tab_0' ) . '"> ' . __( 'Register', 'pmpro-pdf-invoices' ) . '</a>', '<a href="https://yoohooplugins.com/plugins/paid-memberships-pro-pdf-invoices/" target="_blank" rel="nofollow">' . __( 'Purchase one now.', 'pmpro-pdf-invoices' ) . '</a>' ); 
+					echo sprintf( __( '%s your copy of PMPro PDF Invoices to receive access to automatic upgrades and support. Need a license key? %s', 'pmpro-pdf-invoices' ), '<a href="' . admin_url( 'admin.php?page=pmpro_pdf_invoices_license_key&tab=license' ) . '"> ' . __( 'Register', 'pmpro-pdf-invoices' ) . '</a>', '<a href="https://yoohooplugins.com/plugins/paid-memberships-pro-pdf-invoices/" target="_blank" rel="nofollow">' . __( 'Purchase one now.', 'pmpro-pdf-invoices' ) . '</a>' );
 					?></p>
 				</div>
 			</td>
@@ -1158,7 +1188,7 @@ function pmpropdf_show_no_license_warning() {
 		?>
 		<div class="notice pmpropdf-notice-error">
 			<p><?php 
-			echo sprintf( __( '%s your copy of PMPro PDF Invoices to receive access to automatic upgrades and support. Need a license key? %s', 'pmpro-pdf-invoices' ), '<a href="' . admin_url( 'options-general.php?page=pmpro_pdf_invoices_license_key#tab_0' ) . '"> ' . __( 'Register', 'pmpro-pdf-invoices' ) . '</a>', '<a href="https://yoohooplugins.com/plugins/paid-memberships-pro-pdf-invoices/" target="_blank" rel="nofollow">' . __( 'Purchase one now.', 'pmpro-pdf-invoices' ) . '</a>' ); 
+			echo sprintf( __( '%s your copy of PMPro PDF Invoices to receive access to automatic upgrades and support. Need a license key? %s', 'pmpro-pdf-invoices' ), '<a href="' . admin_url( 'admin.php?page=pmpro_pdf_invoices_license_key&tab=license' ) . '"> ' . __( 'Register', 'pmpro-pdf-invoices' ) . '</a>', '<a href="https://yoohooplugins.com/plugins/paid-memberships-pro-pdf-invoices/" target="_blank" rel="nofollow">' . __( 'Purchase one now.', 'pmpro-pdf-invoices' ) . '</a>' );
 			?></p>
 		</div>
 		<?php
@@ -1199,3 +1229,203 @@ function pmpropdf_check_license_valid_api( $license_key ) {
 		return false;
 	}
 }
+
+// =============================================================================
+// EDIT ORDER VIEW SUPPORT
+// =============================================================================
+
+/**
+ * Render the PDF invoice box on the PMPro Edit Order admin page.
+ *
+ * PMPro needs to fire `do_action( 'pmpro_order_edit_after', $order )` on its
+ * single-order edit page for this to work natively. When that hook is available
+ * this callback will be used automatically.
+ *
+ * @param MemberOrder $order The order being edited.
+ */
+function pmpropdf_order_edit_pdf_box( $order ) {
+	if ( empty( $order ) || empty( $order->code ) ) {
+		return;
+	}
+
+	$invoice_dir  = pmpropdf_get_invoice_directory_or_url();
+	$invoice_name = pmpropdf_generate_invoice_name( $order->code );
+	$pdf_exists   = file_exists( $invoice_dir . $invoice_name );
+	?>
+	<div class="pmpropdf-order-edit-box" style="margin-top: 20px;">
+		<h3 style="margin-bottom: 6px;"><?php esc_html_e( 'PDF Invoice', 'pmpro-pdf-invoices' ); ?></h3>
+		<?php if ( $pdf_exists ) : ?>
+			<a href="<?php echo esc_url( admin_url( '?pmpropdf=' . $order->code ) ); ?>" class="button" target="_blank">
+				<?php esc_html_e( 'Download PDF Invoice', 'pmpro-pdf-invoices' ); ?>
+			</a>
+		<?php else : ?>
+			<a href="javascript:void(0)"
+			   id="pmpro-pdf-generate_<?php echo esc_attr( $order->code ); ?>"
+			   class="button pmpro-pdf-generate"
+			   order_code="<?php echo esc_attr( $order->code ); ?>">
+				<?php esc_html_e( 'Generate PDF Invoice', 'pmpro-pdf-invoices' ); ?>
+			</a>
+		<?php endif; ?>
+		<p class="description" style="margin-top: 6px;">
+			<?php esc_html_e( 'Generate or download the PDF invoice for this order.', 'pmpro-pdf-invoices' ); ?>
+		</p>
+	</div>
+	<?php
+}
+/**
+ * Hook into PMPro's Edit Order page action.
+ * Requires PMPro to call: do_action( 'pmpro_order_edit_after', $order )
+ */
+add_action( 'pmpro_order_edit_after', 'pmpropdf_order_edit_pdf_box', 10, 1 );
+
+/**
+ * Fallback: detect the PMPro order edit page via admin_footer and inject
+ * the PDF invoice button. This handles PMPro versions that do not yet fire
+ * `pmpro_order_edit_after`.
+ *
+ * Supported URL patterns:
+ *   admin.php?page=pmpro-membershiporders-edit&id=X
+ *   admin.php?page=pmpro-orders&edit=X (legacy)
+ */
+function pmpropdf_order_edit_fallback_footer() {
+	if ( ! is_admin() || ! current_user_can( 'pmpro_orders' ) ) {
+		return;
+	}
+
+	// Detect order edit page by known PMPro page slugs.
+	$page = isset( $_GET['page'] ) ? sanitize_key( $_GET['page'] ) : '';
+
+	$order_id = 0;
+	if ( $page === 'pmpro-membershiporders-edit' && ! empty( $_GET['id'] ) ) {
+		$order_id = intval( $_GET['id'] );
+	} elseif ( $page === 'pmpro-orders' && ! empty( $_GET['edit'] ) ) {
+		$order_id = intval( $_GET['edit'] );
+	}
+
+	if ( empty( $order_id ) || ! class_exists( 'MemberOrder' ) ) {
+		return;
+	}
+
+	$order = new MemberOrder( $order_id );
+	if ( empty( $order->code ) ) {
+		return;
+	}
+
+	$invoice_dir  = pmpropdf_get_invoice_directory_or_url();
+	$invoice_name = pmpropdf_generate_invoice_name( $order->code );
+	$pdf_exists   = file_exists( $invoice_dir . $invoice_name );
+
+	if ( $pdf_exists ) {
+		$button_html = '<a href="' . esc_url( admin_url( '?pmpropdf=' . $order->code ) ) . '" class="button" target="_blank">' . esc_html__( 'Download PDF Invoice', 'pmpro-pdf-invoices' ) . '</a>';
+	} else {
+		$button_html = '<a href="javascript:void(0)" id="pmpro-pdf-generate_' . esc_attr( $order->code ) . '" class="button pmpro-pdf-generate" order_code="' . esc_attr( $order->code ) . '">' . esc_html__( 'Generate PDF Invoice', 'pmpro-pdf-invoices' ) . '</a>';
+	}
+
+	$description = esc_html__( 'Generate or download the PDF invoice for this order.', 'pmpro-pdf-invoices' );
+	$heading     = esc_html__( 'PDF Invoice', 'pmpro-pdf-invoices' );
+	?>
+	<script type="text/javascript">
+	jQuery( document ).ready( function( $ ) {
+		// Only inject if pmpro_order_edit_after hasn't already rendered the box.
+		if ( $( '.pmpropdf-order-edit-box' ).length ) {
+			return;
+		}
+		var html = '<div class="pmpropdf-order-edit-box postbox" style="margin-top: 20px; padding: 12px 16px;">' +
+			'<h3 style="margin: 0 0 8px;"><?php echo $heading; ?></h3>' +
+			'<?php echo $button_html; ?>' +
+			'<p class="description" style="margin-top: 8px;"><?php echo $description; ?></p>' +
+			'</div>';
+
+		// Append after the last visible postbox or form on the page.
+		var $target = $( '#post, form.pmpro_form, #wpbody-content .wrap form' ).last();
+		if ( $target.length ) {
+			$target.after( html );
+		} else {
+			$( '#wpbody-content .wrap' ).append( html );
+		}
+	} );
+	</script>
+	<?php
+}
+add_action( 'admin_footer', 'pmpropdf_order_edit_fallback_footer' );
+
+// =============================================================================
+// VIEW ORDER SCREEN – ORDER ACTIONS
+// =============================================================================
+
+/**
+ * Add a "Download PDF Invoice" (or "Generate PDF Invoice") action to the
+ * Order Actions section on the PMPro View Order admin screen.
+ *
+ * Hooks into the pmpro_order_view_actions filter introduced in PMPro 3.6,
+ * which populates the #pmpro_order-view-actions sidebar panel.
+ *
+ * @param array       $order_actions Existing order actions array.
+ * @param MemberOrder $order         The order being viewed.
+ * @return array
+ */
+function pmpropdf_order_view_actions( $order_actions, $order ) {
+	if ( empty( $order->code ) ) {
+		return $order_actions;
+	}
+
+	// The download handler generates the PDF on-demand if it doesn't exist yet,
+	// so we can always show a single "Download PDF Invoice" button.
+	$pdf_action = array(
+		'pdf_invoice' => array(
+			'title'  => esc_attr( sprintf( __( 'Download PDF invoice for order # %s', 'pmpro-pdf-invoices' ), $order->code ) ),
+			'href'   => esc_url( admin_url( '?pmpropdf=' . $order->code ) ),
+			'target' => '_blank',
+			'class'  => 'button button-secondary pmpro-has-icon pmpro-has-icon-download',
+			'label'  => esc_html__( 'Download PDF Invoice', 'pmpro-pdf-invoices' ),
+		),
+	);
+
+	return $pdf_action + $order_actions;
+}
+add_filter( 'pmpro_order_view_actions', 'pmpropdf_order_view_actions', 10, 2 );
+
+// =============================================================================
+// WEEKLY LICENSE CHECK CRON
+// =============================================================================
+
+/**
+ * Ensure the weekly license check cron is scheduled.
+ * Runs on admin_init so it self-heals for existing installs (not just new activations).
+ */
+function pmpropdf_maybe_schedule_license_cron() {
+	if ( ! wp_next_scheduled( 'pmpropdf_weekly_license_check' ) ) {
+		wp_schedule_event( time(), 'weekly', 'pmpropdf_weekly_license_check' );
+	}
+}
+add_action( 'admin_init', 'pmpropdf_maybe_schedule_license_cron' );
+
+/**
+ * Unschedule cron on plugin deactivation.
+ */
+register_deactivation_hook( __FILE__, function () {
+	wp_clear_scheduled_hook( 'pmpropdf_weekly_license_check' );
+} );
+
+/**
+ * Weekly cron callback: refresh the license status from the API and reset the transient.
+ *
+ * If the license has expired server-side, this will update the stored status
+ * and the transient, causing the admin notice to appear on the next page load
+ * without waiting for the full 7-day transient window to expire naturally.
+ */
+function pmpropdf_run_weekly_license_check() {
+	$license_key = trim( get_option( 'pmpro_pdf_invoice_license_key' ) );
+
+	if ( empty( $license_key ) ) {
+		return;
+	}
+
+	// Clear the current transient so we always get a fresh API result.
+	delete_transient( 'pmpro_pdf_invoice_license_valid' );
+
+	// Re-check and cache for another week.
+	$is_valid = pmpropdf_check_license_valid_api( $license_key );
+	set_transient( 'pmpro_pdf_invoice_license_valid', $is_valid, 7 * DAY_IN_SECONDS );
+}
+add_action( 'pmpropdf_weekly_license_check', 'pmpropdf_run_weekly_license_check' );
