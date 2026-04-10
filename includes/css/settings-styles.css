@@ -1,172 +1,218 @@
-.pmpropdf_option_tabs .pmpropdf_tab {
-    display:inline-block;
-    background: #f7f7f7;
-    padding: 5px 10px;
-    border: 1px solid #dcdcdc;
-    border-bottom: none;
-    cursor: pointer;
+/* =============================================================================
+   PMPro PDF Invoices – Settings Page Styles
+   ============================================================================= */
+
+/* Tab content area ---------------------------------------------------------- */
+.pmpropdf-tab-content {
+	margin-top: 20px;
 }
 
-.pmpropdf_option_tabs .pmpropdf_tab.active{
-    background: #fff;
-    font-weight: 600;
+/* Section postboxes --------------------------------------------------------- */
+.postbox.pmpropdf-section {
+	margin-bottom: 20px;
 }
 
-.pmpropdf_option_section{
-    padding: 10px;
-    display: none;
+.postbox.pmpropdf-section .hndle {
+	cursor: default;
+	font-size: 14px;
+	padding: 8px 12px;
 }
 
-.pmpropdf_option_section.visible{
-    display: block;
+.postbox.pmpropdf-section .inside {
+	padding: 12px 16px 16px;
 }
 
-.missing_invoice_log{
-    padding: 10px;
-    border: 1px solid #ddd;
-    background: #eee;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    max-width: 300px;
-    border-radius: 2px;
+/* Status badges ------------------------------------------------------------- */
+.pmpropdf-status-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.6;
+	margin-right: 6px;
+	vertical-align: middle;
 }
 
-.missing_invoice_log .item{
-    font-size: 11px;
-    color: #696969;
+.pmpropdf-status-badge--active {
+	background: #00a32a;
+	color: #fff;
 }
 
+.pmpropdf-status-badge--inactive,
+.pmpropdf-status-badge--expired {
+	background: #d63638;
+	color: #fff;
+}
+
+.pmpropdf-status-badge--unknown {
+	background: #dba617;
+	color: #fff;
+}
+
+/* License tab dot indicator ------------------------------------------------- */
+.pmpropdf-license-dot {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	margin-left: 5px;
+	vertical-align: middle;
+	position: relative;
+	top: -1px;
+}
+
+.pmpropdf-license-dot--unregistered {
+	background: #dba617;
+}
+
+.pmpropdf-license-dot--expired {
+	background: #d63638;
+}
+
+/* Generate missing log ------------------------------------------------------ */
+.missing_invoice_log {
+	padding: 10px 12px;
+	border: 1px solid #c3c4c7;
+	background: #f6f7f7;
+	margin: 8px 0 12px;
+	max-width: 400px;
+	border-radius: 3px;
+}
+
+.missing_invoice_log .item {
+	font-size: 12px;
+	color: #50575e;
+	line-height: 1.6;
+}
+
+/* Logo holder --------------------------------------------------------------- */
 .logo_holder {
-    font-size: 11px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+	margin-bottom: 10px;
 }
 
-.rewrite_badge{
-    padding: 2px 5px;
-    margin-right: 5px;
-    border-radius: 5px;
-    display:inline-block;
-    margin-top: 5px;
-    font-size: 11px;
+/* Nginx / code block -------------------------------------------------------- */
+.pmpropdf-code-block {
+	background: #1d2327;
+	color: #f0f0f1;
+	padding: 12px 16px;
+	border-radius: 3px;
+	font-size: 12px;
+	line-height: 1.7;
+	overflow-x: auto;
+	max-width: 600px;
 }
 
-.rewrite_badge.active{
-    background: #0073aa;
-    color: #fff;
+/* Inline notice (shortcodes tab) ------------------------------------------- */
+.pmpropdf-notice {
+	padding: 8px 12px;
+	border-left: 4px solid;
+	margin-top: 8px;
+	font-size: 13px;
 }
 
-.rewrite_badge.inactive{
-    background: #aa0000;
-    color: #fff;
+.pmpropdf-notice--warning {
+	border-color: #dba617;
+	background: #fcf9e8;
 }
 
-.rewrite_badge.unknown{
-    background: #ddd;
+/* =============================================================================
+   Template selector modal
+   ============================================================================= */
+.pmpropdf-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
 }
 
-.pmprofpdf_template_selector {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #33333345;
+.pmpropdf-modal__backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
 }
 
-.pmprofpdf_template_selector .inner_panel{
-    background: #fff;
-    width: 70%;
-    margin: auto;
-    margin-top: 150px;
-    padding: 20px;
-    box-shadow: 0 0 2px 2px #33333314;
+.pmpropdf-modal__dialog {
+	position: relative;
+	z-index: 1;
+	background: #fff;
+	width: 780px;
+	max-width: 95vw;
+	max-height: 85vh;
+	overflow-y: auto;
+	margin: 60px auto 0;
+	border-radius: 4px;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
-.pmprofpdf_template_selector .heading{
-    position: relative;
-}
-.pmprofpdf_template_selector .heading h4{
-    margin: 0;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #ddd;
+.pmpropdf-modal__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 20px;
+	border-bottom: 1px solid #c3c4c7;
 }
 
-.pmprofpdf_template_selector .heading .close_btn{
-    background: #ddd;
-    position: absolute;
-    height: 20px;
-    top: -40px;
-    right: -20px;
-    padding: 0 5px;
-    font-size: 12px;
-    box-shadow: 0 0 2px 2px #33333314;
-    cursor: pointer;
+.pmpropdf-modal__header h2 {
+	margin: 0;
+	font-size: 16px;
 }
 
-.pmprofpdf_template_selector .content .template_tile{
-    width: 250px;
-    height: 250px;
-    overflow: hidden;
-    border: 2px solid #ddd;
-    padding: 5px;
-    cursor: pointer;
-    position: relative;
-    display: inline-block;
-    vertical-align: text-bottom;
-    margin-right: 5px;
+.pmpropdf-modal__close {
+	font-size: 22px;
+	line-height: 1;
+	color: #50575e;
+	cursor: pointer;
+	background: none;
+	border: none;
+	padding: 0 4px;
 }
 
-.pmprofpdf_template_selector .content .template_tile img{
-    width: 100%;
-    transition: all 1s ease;
+.pmpropdf-modal__close:hover {
+	color: #1d2327;
 }
 
-.pmprofpdf_template_selector .content .template_tile .hover {
-    opacity: 0;
-    position: absolute;
-    background: #3333335e;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    color: #fff;
-    font-weight: 600;
-    line-height: 250px;
-    text-align: center;
-    transition: opacity 0.5s ease;
+.pmpropdf-modal__body {
+	padding: 16px 20px 20px;
 }
 
-.pmprofpdf_template_selector .content .template_tile:hover {
-    border-color: #525252;
+/* Template grid ------------------------------------------------------------- */
+.pmpropdf-template-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 16px;
+	margin-top: 14px;
 }
 
-.pmprofpdf_template_selector .content .template_tile:hover img{
-    width: 120%;
-    margin-left:-10%;
+.pmpropdf-template-tile {
+	border: 2px solid #c3c4c7;
+	border-radius: 3px;
+	cursor: pointer;
+	overflow: hidden;
+	position: relative;
+	transition: border-color 0.15s ease;
 }
 
-.pmprofpdf_template_selector .content .template_tile:hover .hover{
-    opacity: 1;
+.pmpropdf-template-tile:hover {
+	border-color: #2271b1;
 }
 
-.pmpropdf_tab.pmpropdf_tab_badge:after {
-    content: "";
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    background: #ddd;
-    margin-left: 5px;
-    vertical-align: middle;
-    border-radius: 10px;
+.pmpropdf-template-tile img {
+	width: 100%;
+	display: block;
+	transition: transform 0.2s ease;
 }
 
-.pmpropdf_tab.pmpropdf_tab_badge.unregistered:after {
-    background: #ffac00;
+.pmpropdf-template-tile:hover img {
+	transform: scale(1.04);
 }
 
-.pmpropdf_tab.pmpropdf_tab_badge.expired:after {
-    background: #c30000;
+.pmpropdf-template-tile span {
+	display: block;
+	text-align: center;
+	padding: 6px 0;
+	font-size: 12px;
+	font-weight: 600;
+	color: #1d2327;
+	background: #f6f7f7;
+	border-top: 1px solid #c3c4c7;
 }
-
