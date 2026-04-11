@@ -30,7 +30,7 @@ function pmpro_pdf_invoice_settings_page() {
 		}
 	}
 
-	if ( isset( $_GET['sub_action'] ) && $_GET['sub_action'] === 'regen_rewrites' ) {
+	if ( isset( $_GET['sub_action'] ) && $_GET['sub_action'] === 'regen_rewrites' && ! pmpropdf_has_pmpro_restricted_directory() ) {
 		pmpropdf_remove_rewrite_for_regen();
 		pmpro_pdf_admin_notice( __( 'Regenerated rewrite file.', 'pmpro-pdf-invoices' ), 'success is-dismissible' );
 	}
@@ -324,9 +324,30 @@ function pmpro_pdf_invoice_settings_page() {
 			<div class="postbox pmpropdf-section">
 				<h2 class="hndle"><?php esc_html_e( 'Archives', 'pmpro-pdf-invoices' ); ?></h2>
 				<div class="inside">
-					<p class="description"><?php esc_html_e( 'Download all stored PDF invoices as a single ZIP file.', 'pmpro-pdf-invoices' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Download PDF invoices as a ZIP file. Use a date range to download invoices for a specific period, or download all at once.', 'pmpro-pdf-invoices' ); ?></p>
+					<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="pmpropdf-date-range-form">
+						<input type="hidden" name="page" value="pmpro_pdf_invoices_license_key">
+						<input type="hidden" name="tab" value="tools">
+						<input type="hidden" name="sub_action" value="download_zip_archive">
+						<?php wp_nonce_field( 'pmpropdf_download_zip', 'pmpropdf_download_nonce' ); ?>
+						<div class="pmpropdf-date-range-fields">
+							<label for="pmpropdf_date_preset"><?php esc_html_e( 'Period', 'pmpro-pdf-invoices' ); ?></label>
+							<select id="pmpropdf_date_preset" name="pmpropdf_date_preset">
+								<option value=""><?php esc_html_e( 'Custom range', 'pmpro-pdf-invoices' ); ?></option>
+								<option value="this_month"><?php esc_html_e( 'This month', 'pmpro-pdf-invoices' ); ?></option>
+								<option value="last_month"><?php esc_html_e( 'Last month', 'pmpro-pdf-invoices' ); ?></option>
+								<option value="this_quarter"><?php esc_html_e( 'This quarter', 'pmpro-pdf-invoices' ); ?></option>
+								<option value="this_year"><?php esc_html_e( 'This year', 'pmpro-pdf-invoices' ); ?></option>
+							</select>
+							<label for="pmpropdf_date_from"><?php esc_html_e( 'From', 'pmpro-pdf-invoices' ); ?></label>
+							<input type="date" id="pmpropdf_date_from" name="pmpropdf_date_from">
+							<label for="pmpropdf_date_to"><?php esc_html_e( 'To', 'pmpro-pdf-invoices' ); ?></label>
+							<input type="date" id="pmpropdf_date_to" name="pmpropdf_date_to">
+							<button type="submit" class="button"><?php esc_html_e( 'Download by Date Range', 'pmpro-pdf-invoices' ); ?></button>
+						</div>
+					</form>
 					<p>
-						<a class="button download_zip_btn" href="<?php echo esc_url( pmpropdf_settings_url( array( 'sub_action' => 'download_zip_archive' ) ) ); ?>">
+						<a class="button download_zip_btn" href="<?php echo esc_url( wp_nonce_url( pmpropdf_settings_url( array( 'sub_action' => 'download_zip_archive' ) ), 'pmpropdf_download_zip', 'pmpropdf_download_nonce' ) ); ?>">
 							<?php esc_html_e( 'Download All as ZIP', 'pmpro-pdf-invoices' ); ?>
 						</a>
 					</p>
@@ -343,7 +364,7 @@ function pmpro_pdf_invoice_settings_page() {
 				</div>
 			</div>
 
-			<?php if ( ! empty( $_SERVER['SERVER_SOFTWARE'] ) && strpos( $_SERVER['SERVER_SOFTWARE'], 'nginx' ) !== false ) :
+			<?php if ( ! pmpropdf_has_pmpro_restricted_directory() && ! empty( $_SERVER['SERVER_SOFTWARE'] ) && strpos( $_SERVER['SERVER_SOFTWARE'], 'nginx' ) !== false ) :
 				$_upload_dir = wp_upload_dir();
 				$_baseurl    = str_replace( site_url(), '', $_upload_dir['baseurl'] );
 				$_invoice_dir = $_baseurl . '/pmpro-invoices/';
@@ -490,7 +511,10 @@ function pmpro_pdf_invoice_settings_page() {
 						<tr>
 							<th scope="row"><?php esc_html_e( 'Invoice File Protection', 'pmpro-pdf-invoices' ); ?></th>
 							<td>
-								<?php if ( pmpropdf_check_rewrite_active() ) : ?>
+								<?php if ( pmpropdf_has_pmpro_restricted_directory() ) : ?>
+									<span class="pmpropdf-status-badge pmpropdf-status-badge--active"><?php esc_html_e( 'Active (PMPro)', 'pmpro-pdf-invoices' ); ?></span>
+									<span class="description"><?php esc_html_e( 'Invoice files are stored in PMPro\'s restricted content directory.', 'pmpro-pdf-invoices' ); ?></span>
+								<?php elseif ( pmpropdf_check_rewrite_active() ) : ?>
 									<span class="pmpropdf-status-badge pmpropdf-status-badge--active"><?php esc_html_e( 'Active', 'pmpro-pdf-invoices' ); ?></span>
 									<span class="description"><?php esc_html_e( 'Invoice files are protected and cannot be accessed directly.', 'pmpro-pdf-invoices' ); ?></span>
 								<?php else : ?>
@@ -505,6 +529,7 @@ function pmpro_pdf_invoice_settings_page() {
 						</tr>
 					</table>
 
+					<?php if ( ! pmpropdf_has_pmpro_restricted_directory() ) : ?>
 					<hr>
 					<p>
 						<strong><?php esc_html_e( 'Regenerate Rewrite File', 'pmpro-pdf-invoices' ); ?></strong><br>
@@ -515,6 +540,7 @@ function pmpro_pdf_invoice_settings_page() {
 							<?php esc_html_e( 'Regenerate Rewrite File', 'pmpro-pdf-invoices' ); ?>
 						</a>
 					</p>
+					<?php endif; ?>
 				</div>
 			</div>
 		</div><!-- .pmpropdf-tab-content -->

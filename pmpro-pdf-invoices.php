@@ -61,15 +61,65 @@ function pmpropdf_init() {
 		include PMPRO_PDF_DIR . '/includes/download-pdf.php';
 	}
 
-	/** Check if the strict redirect is in place*/
-	if(pmpropdf_check_rewrite_active()){
-		//Silence in this case
+	// When PMPro's restricted directory is available it handles file protection
+	// natively, so the legacy .htaccess rewrite is unnecessary.
+	if ( ! pmpropdf_has_pmpro_restricted_directory() ) {
+		pmpropdf_check_rewrite_active();
 	}
 
 	pmpropdf_check_should_zip();
 }
 add_action( 'init', 'pmpropdf_init' );
 
+/**
+ * Migrate invoices from the legacy /uploads/pmpro-invoices/ directory into
+ * PMPro's restricted content directory. Runs once on admin_init.
+ *
+ * @since 1.24
+ */
+function pmpropdf_maybe_migrate_to_restricted_directory() {
+	if ( ! pmpropdf_has_pmpro_restricted_directory() ) {
+		return;
+	}
+	if ( get_option( 'pmpropdf_migrated_to_restricted_dir' ) ) {
+		return;
+	}
+
+	$upload_dir = wp_upload_dir();
+	$legacy_dir = trailingslashit( $upload_dir['basedir'] ) . 'pmpro-invoices/';
+
+	if ( ! is_dir( $legacy_dir ) ) {
+		update_option( 'pmpropdf_migrated_to_restricted_dir', true );
+		return;
+	}
+
+	$new_dir = pmpro_get_restricted_file_path( 'pmpro-invoices' );
+
+	$files = glob( $legacy_dir . '*.pdf' );
+	if ( ! empty( $files ) ) {
+		foreach ( $files as $file ) {
+			$basename = basename( $file );
+			$new_path = $new_dir . $basename;
+			if ( ! file_exists( $new_path ) ) {
+				if ( copy( $file, $new_path ) ) {
+					unlink( $file );
+				}
+			}
+		}
+	}
+
+	$legacy_htaccess = $legacy_dir . '.htaccess';
+	if ( file_exists( $legacy_htaccess ) ) {
+		unlink( $legacy_htaccess );
+	}
+	if ( is_dir( $legacy_dir ) && count( glob( $legacy_dir . '*' ) ) === 0 ) {
+		rmdir( $legacy_dir );
+	}
+
+	delete_option( PMPRO_PDF_REWRITE_TOKEN );
+	update_option( 'pmpropdf_migrated_to_restricted_dir', true );
+}
+add_action( 'admin_init', 'pmpropdf_maybe_migrate_to_restricted_directory' );
 
 function pmpropdf_settings_page() {
 	// Register under the Memberships menu if PMPro is active, otherwise fall back to Settings.
@@ -142,12 +192,20 @@ function pmpropdf_attach_pdf_email( $attachments, $email ) {
 	}
 
 	// Make sure there is an order code available, otherwise get it from the user.
-	if ( empty( $email->data['order_code'] ) ) {
-		$user = get_user_by( "email", $email->data['user_email'] );
-		$last_order = pmpropdf_get_last_order( $user->ID );
-	} else {
+	if ( ! empty( $email->data['order_code'] ) ) {
 		$order_code = $email->data['order_code'];
-		$last_order = pmpropdf_get_order_by_code($order_code);
+		$last_order = pmpropdf_get_order_by_code( $order_code );
+	} elseif ( ! empty( $email->data['order_id'] ) ) {
+		// PMPro's resend email flow sets order_id to the order code.
+		$order_code = $email->data['order_id'];
+		$last_order = pmpropdf_get_order_by_code( $order_code );
+	} else {
+		// Final fallback: get last order by user email.
+		$user = get_user_by( "email", $email->data['user_email'] );
+		if ( empty( $user ) ) {
+			return $attachments;
+		}
+		$last_order = pmpropdf_get_last_order( $user->ID );
 	}
 
 	// Bail if order is empty / doesn't exist.
@@ -440,10 +498,39 @@ function pmpropdf_get_order_by_code( $order_code ) {
 }
 
 /**
- * Returns the invoice storage directory
- * Creates it if it does no exist
+ * Check if PMPro's restricted content directory system is available.
+ *
+ * @since 1.24
+ * @return bool
+ */
+function pmpropdf_has_pmpro_restricted_directory() {
+	return function_exists( 'pmpro_get_restricted_file_path' );
+}
+
+/**
+ * Returns the invoice storage directory.
+ * Creates it if it does not exist.
+ *
+ * When PMPro's restricted content directory is available, invoices are stored
+ * inside it for native file protection. Otherwise falls back to the legacy
+ * custom directory with its own .htaccess protection.
 */
 function pmpropdf_get_invoice_directory_or_url($url = false){
+	// Use PMPro's restricted directory when available.
+	if ( pmpropdf_has_pmpro_restricted_directory() ) {
+		if ( $url ) {
+			return add_query_arg(
+				array(
+					'pmpro_restricted_file_dir' => 'pmpro-invoices',
+					'pmpro_restricted_file'     => '',
+				),
+				site_url( '/' )
+			);
+		}
+		return pmpro_get_restricted_file_path( 'pmpro-invoices' );
+	}
+
+	// Legacy fallback: custom directory with self-managed .htaccess.
 	$upload_dir = wp_upload_dir();
 	$invoice_dir = ($url ? $upload_dir['baseurl'] : $upload_dir['basedir'] ) . '/pmpro-invoices/';
 
@@ -644,6 +731,44 @@ function pmpropdf_get_rewrite_token(){
 }
 
 /**
+ * Allow access to PDF invoices stored in PMPro's restricted content directory.
+ *
+ * @since 1.24
+ *
+ * @param bool   $can_access Whether the user can access the file.
+ * @param string $file_dir   The subdirectory inside the restricted directory.
+ * @param string $file       The filename being requested.
+ * @return bool
+ */
+function pmpropdf_can_access_restricted_file( $can_access, $file_dir, $file ) {
+	if ( $file_dir !== 'pmpro-invoices' ) {
+		return $can_access;
+	}
+	if ( ! is_user_logged_in() ) {
+		return false;
+	}
+	if ( current_user_can( 'pmpro_orders' ) ) {
+		return true;
+	}
+
+	// Extract the order code from the invoice filename (e.g. "INVabc123.pdf" → "abc123").
+	$invoice_prefix = apply_filters( 'pmpro_pdf_invoice_prefix', 'INV' );
+	$order_code     = preg_replace( '/^' . preg_quote( $invoice_prefix, '/' ) . '|\.pdf$/i', '', $file );
+
+	if ( empty( $order_code ) ) {
+		return false;
+	}
+
+	$order = pmpropdf_get_order_by_code( $order_code );
+	if ( ! empty( $order[0] ) && intval( $order[0]->user_id ) === get_current_user_id() ) {
+		return true;
+	}
+
+	return false;
+}
+add_filter( 'pmpro_can_access_restricted_file', 'pmpropdf_can_access_restricted_file', 10, 3 );
+
+/**
  * Shortcode handler for the invoice list based on current user
  */
 function pmpropdf_download_list_shortcode_handler(){
@@ -823,47 +948,131 @@ function pmpropdf_check_should_zip(){
 				}
 			}
 		}
-	} else if (!empty($_GET['page']) && !empty($_GET['sub_action'])){
-		if($_GET['page'] === 'pmpro_pdf_invoices_license_key' && $_GET['sub_action'] === 'download_zip_archive'){
-			/* This is an admin download, processes here for the sake of header output */
-			if(current_user_can('administrator') && class_exists('ZipArchive')){
-				$invoice_dir = pmpropdf_get_invoice_directory_or_url();
-				if(file_exists($invoice_dir)){
-					$files = scandir($invoice_dir); 
-					$pdfs = array();
-					foreach ($files as $file) {
-						if(strpos($file, '.pdf') !== FALSE){
-							$pdfs[] = pmpropdf_get_invoice_directory_or_url() . $file;
-						}
+	} else if ( ! empty( $_GET['page'] ) && ! empty( $_GET['sub_action'] ) ) {
+		if ( $_GET['page'] === 'pmpro_pdf_invoices_license_key' && $_GET['sub_action'] === 'download_zip_archive' ) {
+			if ( ! current_user_can( 'administrator' ) || ! class_exists( 'ZipArchive' ) ) {
+				return;
+			}
+
+			if ( ! isset( $_GET['pmpropdf_download_nonce'] ) || ! wp_verify_nonce( $_GET['pmpropdf_download_nonce'], 'pmpropdf_download_zip' ) ) {
+				wp_die( __( 'Security check failed.', 'pmpro-pdf-invoices' ) );
+			}
+
+			global $wpdb;
+
+			$date_from = ! empty( $_GET['pmpropdf_date_from'] ) ? sanitize_text_field( $_GET['pmpropdf_date_from'] ) : '';
+			$date_to   = ! empty( $_GET['pmpropdf_date_to'] )   ? sanitize_text_field( $_GET['pmpropdf_date_to'] )   : '';
+			$has_date_filter = ! empty( $date_from ) || ! empty( $date_to );
+
+			if ( ! empty( $date_from ) && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_from ) ) {
+				wp_die( __( 'Invalid "From" date format. Please use YYYY-MM-DD.', 'pmpro-pdf-invoices' ) );
+			}
+			if ( ! empty( $date_to ) && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_to ) ) {
+				wp_die( __( 'Invalid "To" date format. Please use YYYY-MM-DD.', 'pmpro-pdf-invoices' ) );
+			}
+
+			$pdfs          = array();
+			$missing_codes = array();
+
+			if ( $has_date_filter ) {
+				$where = array( "status NOT IN('review', 'token', 'error')" );
+				if ( ! empty( $date_from ) ) {
+					$where[] = $wpdb->prepare( 'timestamp >= %s', $date_from . ' 00:00:00' );
+				}
+				if ( ! empty( $date_to ) ) {
+					$where[] = $wpdb->prepare( 'timestamp <= %s', $date_to . ' 23:59:59' );
+				}
+				$where_sql = implode( ' AND ', $where );
+
+				$orders = $wpdb->get_results(
+					"SELECT code FROM {$wpdb->pmpro_membership_orders} WHERE {$where_sql} ORDER BY timestamp ASC"
+				);
+
+				foreach ( $orders as $order ) {
+					$filepath = pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name( $order->code );
+					if ( file_exists( $filepath ) && is_readable( $filepath ) ) {
+						$pdfs[] = $filepath;
+					} else {
+						$missing_codes[] = $order->code;
 					}
-					
-					if(!empty($pdfs)){
-						$archive_name = 'invoices_archive_' . time() . '.zip';
-						$archive = new ZipArchive;
-						if($archive->open($archive_name, ZipArchive::CREATE) === TRUE){
-							foreach ($pdfs as $path) {
-								$archive->addFromString(basename($path), file_get_contents($path));
-							}
-							$archive->close();
-
-							while (ob_get_level()) {
-								ob_end_clean();
-							}
-
-							header('Content-Type: application/zip');
-							header('Content-disposition: attachment; filename='.$archive_name);
-							header('Content-Length: ' . filesize($archive_name));
-							readfile($archive_name);
-
-							@unlink($archive_name);
-							exit;
+				}
+			} else {
+				$invoice_dir = pmpropdf_get_invoice_directory_or_url();
+				if ( file_exists( $invoice_dir ) ) {
+					$files = scandir( $invoice_dir );
+					foreach ( $files as $file ) {
+						if ( strpos( $file, '.pdf' ) !== false ) {
+							$pdfs[] = $invoice_dir . $file;
 						}
 					}
 				}
 			}
+
+			if ( empty( $pdfs ) ) {
+				$redirect_url = add_query_arg(
+					array( 'page' => 'pmpro_pdf_invoices_license_key', 'tab' => 'tools', 'pmpropdf_notice' => 'no_pdfs' ),
+					admin_url( 'admin.php' )
+				);
+				wp_safe_redirect( $redirect_url );
+				exit;
+			}
+
+			if ( ! empty( $date_from ) && ! empty( $date_to ) ) {
+				$archive_label = 'invoices_' . $date_from . '_to_' . $date_to;
+			} elseif ( ! empty( $date_from ) ) {
+				$archive_label = 'invoices_from_' . $date_from;
+			} elseif ( ! empty( $date_to ) ) {
+				$archive_label = 'invoices_to_' . $date_to;
+			} else {
+				$archive_label = 'invoices_all_' . gmdate( 'Y-m-d' );
+			}
+			$archive_name = tempnam( sys_get_temp_dir(), 'pmpropdf_' ) . '.zip';
+
+			$archive = new ZipArchive;
+			if ( $archive->open( $archive_name, ZipArchive::CREATE ) === true ) {
+				foreach ( $pdfs as $path ) {
+					$archive->addFromString( basename( $path ), file_get_contents( $path ) );
+				}
+
+				if ( ! empty( $missing_codes ) ) {
+					$manifest  = "The following order codes did not have a PDF on disk:\n\n";
+					$manifest .= implode( "\n", $missing_codes );
+					$manifest .= "\n\nYou can regenerate these from the Tools tab.";
+					$archive->addFromString( 'missing_invoices.txt', $manifest );
+				}
+
+				$archive->close();
+
+				while ( ob_get_level() ) {
+					ob_end_clean();
+				}
+
+				header( 'Content-Type: application/zip' );
+				header( 'Content-Disposition: attachment; filename="' . $archive_label . '.zip"' );
+				header( 'Content-Length: ' . filesize( $archive_name ) );
+				readfile( $archive_name );
+
+				@unlink( $archive_name );
+				exit;
+			}
 		}
 	}
 }
+
+/**
+ * Show admin notice when a ZIP download returned no PDFs.
+ */
+function pmpropdf_zip_admin_notices() {
+	if ( empty( $_GET['pmpropdf_notice'] ) || $_GET['pmpropdf_notice'] !== 'no_pdfs' ) {
+		return;
+	}
+	?>
+	<div class="notice notice-warning is-dismissible">
+		<p><?php esc_html_e( 'No PDF invoices were found for the selected date range. Try a different range or generate invoices first.', 'pmpro-pdf-invoices' ); ?></p>
+	</div>
+	<?php
+}
+add_action( 'admin_notices', 'pmpropdf_zip_admin_notices' );
 
 
 function pmpropdf_footer_note ($footnote){
@@ -877,6 +1086,10 @@ add_filter('admin_footer_text', 'pmpropdf_footer_note', 10, 1);
 
 
 function pmpropdf_nginx_notice () {
+
+	if ( pmpropdf_has_pmpro_restricted_directory() ) {
+		return;
+	}
 
 	if ( empty( $_REQUEST['page'] ) || strpos( $_REQUEST['page'], 'pmpro' ) === false ) {
 		return;

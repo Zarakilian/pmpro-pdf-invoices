@@ -103,6 +103,29 @@
 	max-width: 600px;
 }
 
+/* Date range form ----------------------------------------------------------- */
+.pmpropdf-date-range-form {
+	margin-bottom: 12px;
+}
+
+.pmpropdf-date-range-fields {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.pmpropdf-date-range-fields label {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.pmpropdf-date-range-fields input[type="date"],
+.pmpropdf-date-range-fields select {
+	max-width: 180px;
+}
+
 /* Inline notice (shortcodes tab) ------------------------------------------- */
 .pmpropdf-notice {
 	padding: 8px 12px;

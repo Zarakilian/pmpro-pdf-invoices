@@ -61,6 +61,45 @@ jQuery( function ( $ ) {
 	} );
 
 	/* -------------------------------------------------------------------------
+	   Date range preset selector
+	------------------------------------------------------------------------- */
+	$( '#pmpropdf_date_preset' ).on( 'change', function () {
+		var preset  = $( this ).val();
+		var now     = new Date();
+		var year    = now.getFullYear();
+		var month   = now.getMonth();
+		var fromStr = '';
+		var toStr   = '';
+
+		switch ( preset ) {
+			case 'this_month':
+				fromStr = pmpropdf_format_date( year, month, 1 );
+				toStr   = pmpropdf_format_date( year, month + 1, 0 );
+				break;
+			case 'last_month':
+				fromStr = pmpropdf_format_date( year, month - 1, 1 );
+				toStr   = pmpropdf_format_date( year, month, 0 );
+				break;
+			case 'this_quarter':
+				var qStart = Math.floor( month / 3 ) * 3;
+				fromStr = pmpropdf_format_date( year, qStart, 1 );
+				toStr   = pmpropdf_format_date( year, qStart + 3, 0 );
+				break;
+			case 'this_year':
+				fromStr = pmpropdf_format_date( year, 0, 1 );
+				toStr   = pmpropdf_format_date( year, 11, 31 );
+				break;
+		}
+
+		$( '#pmpropdf_date_from' ).val( fromStr );
+		$( '#pmpropdf_date_to' ).val( toStr );
+	} );
+
+	$( '#pmpropdf_date_from, #pmpropdf_date_to' ).on( 'change', function () {
+		$( '#pmpropdf_date_preset' ).val( '' );
+	} );
+
+	/* -------------------------------------------------------------------------
 	   Template selector modal
 	------------------------------------------------------------------------- */
 	$( '.select_template_btn' ).on( 'click', function ( e ) {
@@ -145,6 +184,16 @@ function pmpropdf_update_batch_stats() {
 			'Skipped: '   + pmpropdf_js.batch_process.total_skipped +
 		'</div>'
 	);
+}
+
+/* ---------------------------------------------------------------------------
+   Date helper — returns YYYY-MM-DD from year, 0-indexed month, day.
+--------------------------------------------------------------------------- */
+function pmpropdf_format_date( year, month, day ) {
+	var d  = new Date( year, month, day );
+	var mm = ( '0' + ( d.getMonth() + 1 ) ).slice( -2 );
+	var dd = ( '0' + d.getDate() ).slice( -2 );
+	return d.getFullYear() + '-' + mm + '-' + dd;
 }
 
 /* ---------------------------------------------------------------------------
