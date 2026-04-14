@@ -624,11 +624,12 @@ function pmpropdf_process_batch( $batch_size = 100, $batch_no = 0, $force = fals
 	try {
 		// On the first batch, include the total order count so the JS progress bar
 		// knows the denominator without an extra round-trip.
+		// Must match pmpropdf_get_order_batch() exactly (no status filter) so
+		// total_count never exceeds total_orders and the bar stays 0–100%.
 		if ( $batch_no === 0 ) {
 			global $wpdb;
 			$output_array['total_orders'] = (int) $wpdb->get_var(
-				"SELECT COUNT(*) FROM {$wpdb->pmpro_membership_orders}
-				 WHERE status NOT IN('review','token','error')"
+				"SELECT COUNT(*) FROM {$wpdb->pmpro_membership_orders}"
 			);
 		}
 
