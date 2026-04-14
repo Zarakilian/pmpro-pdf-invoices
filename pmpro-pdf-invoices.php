@@ -192,20 +192,17 @@ function pmpropdf_attach_pdf_email( $attachments, $email ) {
 	}
 
 	// Make sure there is an order code available, otherwise get it from the user.
-	if ( ! empty( $email->data['order_code'] ) ) {
-		$order_code = $email->data['order_code'];
-		$last_order = pmpropdf_get_order_by_code( $order_code );
-	} elseif ( ! empty( $email->data['order_id'] ) ) {
-		// PMPro's resend email flow sets order_id to the order code.
-		$order_code = $email->data['order_id'];
-		$last_order = pmpropdf_get_order_by_code( $order_code );
-	} else {
-		// Final fallback: get last order by user email.
+	// Check both 'order_id' (used by PMPro) and 'order_code' (legacy/custom) for compatibility.
+	if ( empty( $email->data['order_id'] ) && empty( $email->data['order_code'] ) ) {
 		$user = get_user_by( "email", $email->data['user_email'] );
 		if ( empty( $user ) ) {
 			return $attachments;
 		}
 		$last_order = pmpropdf_get_last_order( $user->ID );
+	} else {
+		// Prefer 'order_id' as that's what PMPro provides, fall back to 'order_code' for legacy support.
+		$order_code = ! empty( $email->data['order_id'] ) ? $email->data['order_id'] : $email->data['order_code'];
+		$last_order = pmpropdf_get_order_by_code($order_code);
 	}
 
 	// Bail if order is empty / doesn't exist.
@@ -260,7 +257,9 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		return;
 	}
 
+	// Still get the user, if they don't exist/deleted. We should still be able to generate the PDF for the order.
 	$user = get_user_by('ID', $order_data->user_id);
+
 	$order = new MemberOrder( $order_data->code );
 
 	$dompdf = new Dompdf( apply_filters( 'pmpropdf_dompdf_args', array( 'enable_remote' => true ) ) );
@@ -335,14 +334,14 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		'{{display_name}}' => $user->data->display_name ?: '',
 		'{{levels_url}}' => pmpro_url( 'levels' ) ?: '',
 		'{{billing_address}}' => wp_kses_post( $billing_details ) ?: '', // The formatted billing address.
-		'{{billing_name}}' => isset( $order->billing->name ) ? sanitize_text_field( $order->billing->name ) : '',
-		'{{billing_street}}' => isset( $order->billing->street ) ? sanitize_text_field( $order->billing->street ) : '',
-		'{{billing_street2}}' => isset( $order->billing->street2 ) ? sanitize_text_field( $order->billing->street2 ) : '',
-		'{{billing_city}}' => isset( $order->billing->city ) ? sanitize_text_field( $order->billing->city ) : '',
-		'{{billing_state}}' => isset( $order->billing->state ) ? sanitize_text_field( $order->billing->state ) : '',
-		'{{billing_zip}}' => isset( $order->billing->zip ) ? sanitize_text_field( $order->billing->zip ) : '',
-		'{{billing_country}}' => isset( $order->billing->country ) ? sanitize_text_field( $order->billing->country ) : '',
-		'{{billing_phone}}' => isset( $order->billing->phone ) ? sanitize_text_field( $order->billing->phone ) : '',
+		'{{billing_name}}' => isset( $order->billing->name ) ? sanitize_text_field( $order->billing->name ) : ( isset( $order_data->billing->name ) ? sanitize_text_field( $order_data->billing->name ) : '' ),
+		'{{billing_street}}' => isset( $order->billing->street ) ? sanitize_text_field( $order->billing->street ) : ( isset( $order_data->billing->street ) ? sanitize_text_field( $order_data->billing->street ) : '' ),
+		'{{billing_street2}}' => isset( $order->billing->street2 ) ? sanitize_text_field( $order->billing->street2 ) : ( isset( $order_data->billing->street2 ) ? sanitize_text_field( $order_data->billing->street2 ) : '' ),
+		'{{billing_city}}' => isset( $order->billing->city ) ? sanitize_text_field( $order->billing->city ) : ( isset( $order_data->billing->city ) ? sanitize_text_field( $order_data->billing->city ) : '' ),
+		'{{billing_state}}' => isset( $order->billing->state ) ? sanitize_text_field( $order->billing->state ) : ( isset( $order_data->billing->state ) ? sanitize_text_field( $order_data->billing->state ) : '' ),
+		'{{billing_zip}}' => isset( $order->billing->zip ) ? sanitize_text_field( $order->billing->zip ) : ( isset( $order_data->billing->zip ) ? sanitize_text_field( $order_data->billing->zip ) : '' ),
+		'{{billing_country}}' => isset( $order->billing->country ) ? sanitize_text_field( $order->billing->country ) : ( isset( $order_data->billing->country ) ? sanitize_text_field( $order_data->billing->country ) : '' ),
+		'{{billing_phone}}' => isset( $order->billing->phone ) ? sanitize_text_field( $order->billing->phone ) : ( isset( $order_data->billing->phone ) ? sanitize_text_field( $order_data->billing->phone ) : '' ),
 		'{{order_link}}' => pmpro_login_url( pmpro_url( 'invoice', '?invoice=' . $order_data->code ) ),
 		'{{order_url}}' => pmpro_login_url( pmpro_url( 'invoice', '?invoice=' . $order_data->code ) ),
 		'{{name}}' => $user->data->display_name ?: '',
@@ -391,6 +390,12 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 
 	$dompdf->loadHtml( $body );
 
+	// Set paper size and orientation via filter. Default: 'letter', 'portrait'.
+	// Accepts: string (e.g., 'a4', 'letter', 'legal') or array( width, height ) in points.
+	$paper_size = apply_filters( 'pmpropdf_paper_size', 'letter', $order_data );
+	$paper_orientation = apply_filters( 'pmpropdf_paper_orientation', 'portrait', $order_data );
+	$dompdf->setPaper( $paper_size, $paper_orientation );
+
 	$dompdf = apply_filters( 'pmpropdf_dompdf_before_render', $dompdf );
 
 	$dompdf->render();
@@ -412,6 +417,9 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		return false;
 	}
 		
+	// Store a hash of the order data so we can skip regeneration when nothing changed.
+	update_option( 'pmpropdf_hash_' . $order_data->code, pmpropdf_get_order_hash( $order_data ), false );
+
 	do_action( 'pmpropdf_generated_pdf_invoice', $order_data->id, $path );
 
 	return $path;
@@ -551,6 +559,35 @@ function pmpropdf_generate_invoice_name($order_code){
 	$invoice_name = $invoice_prefix . $order_code . ".pdf";
 	
 	return apply_filters( 'pmpro_pdf_invoice_name', $invoice_name, $order_code );
+}
+
+/**
+ * Get PDF coverage stats: how many orders have PDFs generated.
+ *
+ * @since 1.24
+ * @return array|false Array with 'total' and 'with_pdf' keys, or false on failure.
+ */
+function pmpropdf_get_pdf_coverage_stats() {
+	global $wpdb;
+
+	$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->pmpro_membership_orders" );
+	$invoice_dir = pmpropdf_get_invoice_directory_or_url();
+
+	$with_pdf = 0;
+	$orders = $wpdb->get_results( "SELECT code FROM $wpdb->pmpro_membership_orders" );
+	if ( $orders ) {
+		foreach ( $orders as $order ) {
+			$invoice_name = pmpropdf_generate_invoice_name( $order->code );
+			if ( file_exists( $invoice_dir . $invoice_name ) ) {
+				$with_pdf++;
+			}
+		}
+	}
+
+	return array(
+		'total'    => $total,
+		'with_pdf' => $with_pdf,
+	);
 }
 
 /**
@@ -781,13 +818,17 @@ function pmpropdf_download_list_shortcode_handler(){
 
 	$limit = apply_filters( 'pmpropdf_invoice_table_limit', 15 );
 
-	$invoices = $wpdb->get_results("
-		SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
-		FROM $wpdb->pmpro_membership_orders
-		WHERE user_id = '$current_user->ID'
-		AND status NOT
-		IN('review', 'token', 'error')
-		ORDER BY timestamp DESC LIMIT " . $limit
+	$invoices = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
+			FROM $wpdb->pmpro_membership_orders
+			WHERE user_id = %d
+			AND status NOT
+			IN('review', 'token', 'error')
+			ORDER BY timestamp DESC LIMIT %d",
+			$current_user->ID,
+			$limit
+		)
 	);
 	if(!empty($invoices)){
 		$content = '';
@@ -820,7 +861,7 @@ function pmpropdf_download_list_shortcode_handler(){
 				$content .=		'<td>' . pmpro_formatPrice($invoice->total) . '</td>';
 				$content .= '<td class="' . esc_attr( pmpro_get_element_class( 'pmpro_table_order-status' ) ) . '" data-title="' . esc_attr__( 'Status', 'pmpro-pdf-invoices' ) . '">';
 				$content .= '<span class="' . esc_attr( pmpro_get_element_class( 'pmpro_tag pmpro_tag-' . $tag_style ) ) . '">' . esc_html( $display_status ) . '</span></td>';
-				$content .= 	'<td><a href="' . esc_url( admin_url( '?pmpropdf=' . $invoice->code ) ). '">' . pmpropdf_generate_invoice_name( $invoice->code ) .'</a></td>';
+				$content .= 	'<td><a href="' . esc_url( home_url( '?pmpropdf=' . $invoice->code ) ). '">' . pmpropdf_generate_invoice_name( $invoice->code ) .'</a></td>';
 				$content .= '</tr>';
 			}
 			
@@ -879,13 +920,16 @@ function pmpropdf_download_all_zip_shortcode_handler( $atts ){
 	if(class_exists('ZipArchive') && is_user_logged_in() ) {
 		global $wpdb, $current_user;
 
-		$invoices = $wpdb->get_results("
-			SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
-			FROM $wpdb->pmpro_membership_orders
-			WHERE user_id = '$current_user->ID'
-			AND status NOT
-			IN('review', 'token', 'error')
-			ORDER BY timestamp DESC"
+		$invoices = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
+				FROM $wpdb->pmpro_membership_orders
+				WHERE user_id = %d
+				AND status NOT
+				IN('review', 'token', 'error')
+				ORDER BY timestamp DESC",
+				$current_user->ID
+			)
 		);
 
 		if(!empty($invoices) && count($invoices) > 0){
@@ -909,13 +953,16 @@ function pmpropdf_check_should_zip(){
 				if(class_exists('ZipArchive') && function_exists('pmpro_hasMembershipLevel') && pmpro_hasMembershipLevel()){
 					global $wpdb, $current_user;
 
-					$invoices = $wpdb->get_results("
-						SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
-						FROM $wpdb->pmpro_membership_orders
-						WHERE user_id = '$current_user->ID'
-						AND status NOT
-						IN('review', 'token', 'error')
-						ORDER BY timestamp DESC"
+					$invoices = $wpdb->get_results(
+						$wpdb->prepare(
+							"SELECT *, UNIX_TIMESTAMP(timestamp) as timestamp
+							FROM $wpdb->pmpro_membership_orders
+							WHERE user_id = %d
+							AND status NOT
+							IN('review', 'token', 'error')
+							ORDER BY timestamp DESC",
+							$current_user->ID
+						)
 					);
 
 					if (!empty($invoices)) {
@@ -948,63 +995,94 @@ function pmpropdf_check_should_zip(){
 				}
 			}
 		}
-	} else if ( ! empty( $_GET['page'] ) && ! empty( $_GET['sub_action'] ) ) {
-		if ( $_GET['page'] === 'pmpro_pdf_invoices_license_key' && $_GET['sub_action'] === 'download_zip_archive' ) {
-			if ( ! current_user_can( 'administrator' ) || ! class_exists( 'ZipArchive' ) ) {
-				return;
-			}
-
-			if ( ! isset( $_GET['pmpropdf_download_nonce'] ) || ! wp_verify_nonce( $_GET['pmpropdf_download_nonce'], 'pmpropdf_download_zip' ) ) {
-				wp_die( __( 'Security check failed.', 'pmpro-pdf-invoices' ) );
-			}
-
-			global $wpdb;
-
-			$date_from = ! empty( $_GET['pmpropdf_date_from'] ) ? sanitize_text_field( $_GET['pmpropdf_date_from'] ) : '';
-			$date_to   = ! empty( $_GET['pmpropdf_date_to'] )   ? sanitize_text_field( $_GET['pmpropdf_date_to'] )   : '';
-			$has_date_filter = ! empty( $date_from ) || ! empty( $date_to );
-
-			if ( ! empty( $date_from ) && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_from ) ) {
-				wp_die( __( 'Invalid "From" date format. Please use YYYY-MM-DD.', 'pmpro-pdf-invoices' ) );
-			}
-			if ( ! empty( $date_to ) && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_to ) ) {
-				wp_die( __( 'Invalid "To" date format. Please use YYYY-MM-DD.', 'pmpro-pdf-invoices' ) );
-			}
-
-			$pdfs          = array();
-			$missing_codes = array();
-
-			if ( $has_date_filter ) {
-				$where = array( "status NOT IN('review', 'token', 'error')" );
-				if ( ! empty( $date_from ) ) {
-					$where[] = $wpdb->prepare( 'timestamp >= %s', $date_from . ' 00:00:00' );
-				}
-				if ( ! empty( $date_to ) ) {
-					$where[] = $wpdb->prepare( 'timestamp <= %s', $date_to . ' 23:59:59' );
-				}
-				$where_sql = implode( ' AND ', $where );
-
-				$orders = $wpdb->get_results(
-					"SELECT code FROM {$wpdb->pmpro_membership_orders} WHERE {$where_sql} ORDER BY timestamp ASC"
-				);
-
-				foreach ( $orders as $order ) {
-					$filepath = pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name( $order->code );
-					if ( file_exists( $filepath ) && is_readable( $filepath ) ) {
-						$pdfs[] = $filepath;
-					} else {
-						$missing_codes[] = $order->code;
+	} else if (!empty($_GET['page']) && !empty($_GET['sub_action'])){
+		if($_GET['page'] === 'pmpro_pdf-invoices_license_key' && $_GET['sub_action'] === 'download_zip_archive'){
+			/* This is an admin download, processes here for the sake of header output */
+			if(current_user_can('administrator') && class_exists('ZipArchive')){
+				global $wpdb;
+				
+				// Date filtering parameters
+				$date_from = !empty($_GET['pmpropdf_date_from']) ? sanitize_text_field($_GET['pmpropdf_date_from']) : '';
+				$date_to = !empty($_GET['pmpropdf_date_to']) ? sanitize_text_field($_GET['pmpropdf_date_to']) : '';
+				$has_date_filter = !empty($date_from) || !empty($date_to);
+				
+				$pdfs = array();
+				
+				if ($has_date_filter) {
+					// Verify nonce for date-filtered downloads
+					if (!isset($_GET['pmpropdf_download_nonce']) || !wp_verify_nonce($_GET['pmpropdf_download_nonce'], 'pmpropdf_download_zip')) {
+						wp_die(__('Security check failed.', 'pmpro-pdf-invoices'));
 					}
-				}
-			} else {
-				$invoice_dir = pmpropdf_get_invoice_directory_or_url();
-				if ( file_exists( $invoice_dir ) ) {
-					$files = scandir( $invoice_dir );
-					foreach ( $files as $file ) {
-						if ( strpos( $file, '.pdf' ) !== false ) {
-							$pdfs[] = $invoice_dir . $file;
+					
+					// Validate date format (YYYY-MM-DD)
+					if (!empty($date_from) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from)) {
+						wp_die(__('Invalid date format for date_from.', 'pmpro-pdf-invoices'));
+					}
+					if (!empty($date_to) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to)) {
+						wp_die(__('Invalid date format for date_to.', 'pmpro-pdf-invoices'));
+					}
+					
+					// Build WHERE clause for date range
+					$where = array();
+					if (!empty($date_from)) {
+						$where[] = $wpdb->prepare('timestamp >= %s', $date_from . ' 00:00:00');
+					}
+					if (!empty($date_to)) {
+						$where[] = $wpdb->prepare('timestamp <= %s', $date_to . ' 23:59:59');
+					}
+					$where_sql = implode(' AND ', $where);
+					
+					// Get orders within date range
+					$orders = $wpdb->get_results("
+						SELECT code
+						FROM $wpdb->pmpro_membership_orders
+						WHERE $where_sql
+						AND status NOT IN('review', 'token', 'error')
+						ORDER BY timestamp ASC
+					");
+					
+					foreach ($orders as $order) {
+						$filepath = pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name($order->code);
+						if (file_exists($filepath) && is_readable($filepath)) {
+							$pdfs[] = $filepath;
 						}
 					}
+				} else {
+					// No date filter: scan all PDFs as before
+					$invoice_dir = pmpropdf_get_invoice_directory_or_url();
+					if (file_exists($invoice_dir)) {
+						$files = scandir($invoice_dir);
+						foreach ($files as $file) {
+							if (strpos($file, '.pdf') !== FALSE) {
+								$pdfs[] = pmpropdf_get_invoice_directory_or_url() . $file;
+							}
+						}
+					}
+				}
+				
+				if (!empty($pdfs)) {
+					$archive_name = 'invoices_archive_' . time() . '.zip';
+					$archive = new ZipArchive;
+					if ($archive->open($archive_name, ZipArchive::CREATE) === TRUE) {
+						foreach ($pdfs as $path) {
+							$archive->addFromString(basename($path), file_get_contents($path));
+						}
+						$archive->close();
+
+						while (ob_get_level()) {
+							ob_end_clean();
+						}
+
+						header('Content-Type: application/zip');
+						header('Content-disposition: attachment; filename=' . $archive_name);
+						header('Content-Length: ' . filesize($archive_name));
+						readfile($archive_name);
+
+						@unlink($archive_name);
+						exit;
+					}
+				} else {
+					wp_die(__('No PDF invoices found for the selected date range.', 'pmpro-pdf-invoices'));
 				}
 			}
 
@@ -1057,25 +1135,7 @@ function pmpropdf_check_should_zip(){
 			}
 		}
 	}
-}
-
-/**
- * Show admin notice when a ZIP download returned no PDFs.
- */
-function pmpropdf_zip_admin_notices() {
-	if ( empty( $_GET['pmpropdf_notice'] ) || $_GET['pmpropdf_notice'] !== 'no_pdfs' ) {
-		return;
-	}
-	?>
-	<div class="notice notice-warning is-dismissible">
-		<p><?php esc_html_e( 'No PDF invoices were found for the selected date range. Try a different range or generate invoices first.', 'pmpro-pdf-invoices' ); ?></p>
-	</div>
-	<?php
-}
-add_action( 'admin_notices', 'pmpropdf_zip_admin_notices' );
-
-
-function pmpropdf_footer_note ($footnote){
+}function pmpropdf_footer_note ($footnote){
 	if(!empty($_GET['page']) && strpos($_GET['page'], 'pmpro_pdf_invoices') !== FALSE){
 		$footnote .= "<em> || PMPro PDF Invoices (v" . PMPRO_PDF_VERSION . ") by <a href='https://yoohooplugins.com/' target='_blank'>Yoohoo Plugins</a>.</em>";
 	}
@@ -1208,7 +1268,36 @@ function pmpropdf_migrate_custom_template(){
 }
 
 /**
- * Regenerate PDF invoice when an order is updated
+ * Build a hash of the order fields that affect the PDF output.
+ *
+ * @since 1.24
+ * @param object $order Order object (MemberOrder or DB row).
+ * @return string MD5 hash of PDF-relevant fields.
+ */
+function pmpropdf_get_order_hash( $order ) {
+	$fields = array(
+		'total'         => isset( $order->total ) ? $order->total : '',
+		'subtotal'      => isset( $order->subtotal ) ? $order->subtotal : '',
+		'tax'           => isset( $order->tax ) ? $order->tax : '',
+		'status'        => isset( $order->status ) ? $order->status : '',
+		'membership_id' => isset( $order->membership_id ) ? $order->membership_id : '',
+		'user_id'       => isset( $order->user_id ) ? $order->user_id : '',
+		'gateway'       => isset( $order->gateway ) ? $order->gateway : '',
+	);
+
+	// Include billing fields if available.
+	if ( ! empty( $order->billing ) ) {
+		foreach ( array( 'name', 'street', 'city', 'state', 'zip', 'country', 'phone' ) as $key ) {
+			$fields[ 'billing_' . $key ] = isset( $order->billing->$key ) ? $order->billing->$key : '';
+		}
+	}
+
+	return md5( serialize( $fields ) );
+}
+
+/**
+ * Regenerate PDF invoice when an order is updated.
+ * Only regenerates if PDF-relevant data has changed.
  *
  * @since 1.9
  */
@@ -1218,8 +1307,17 @@ function pmpropdf_updated_order( $order ) {
 		$invoice_dir = pmpropdf_get_invoice_directory_or_url();
 		$invoice_name = pmpropdf_generate_invoice_name($order->code);
 
-		if(file_exists($invoice_dir . $invoice_name)){
-			unlink($invoice_dir . $invoice_name);
+		// Compare hash of current order data with the stored hash from last generation.
+		$new_hash = pmpropdf_get_order_hash( $order );
+		$stored_hash = get_option( 'pmpropdf_hash_' . $order->code );
+
+		if ( $new_hash === $stored_hash && file_exists( $invoice_dir . $invoice_name ) ) {
+			// Nothing PDF-relevant changed, skip regeneration.
+			return;
+		}
+
+		if ( file_exists( $invoice_dir . $invoice_name ) ) {
+			unlink( $invoice_dir . $invoice_name );
 		}
 
 		$path = pmpropdf_generate_pdf($order);
@@ -1259,18 +1357,18 @@ add_action( 'admin_enqueue_scripts', 'pmpropdf_enqueue_scripts_styles' );
  * @since 1.2
  */
 function pmpropdf_ajax_generate_pdf_invoice() {
-	$order_code = sanitize_text_field( $_REQUEST['order_code'] );
-	$last_order = pmpropdf_get_order_by_code($order_code);
-
 	// check if nonce is valid
 	if ( ! wp_verify_nonce( $_REQUEST['nonce'], 'pmpro-pdf-invoices-single' ) ) {
 		wp_die( __( 'Nonce is invalid', 'pmpro-pdf-invoices' ) );
 	}
 
+	$order_code = sanitize_text_field( $_REQUEST['order_code'] );
+	$last_order = pmpropdf_get_order_by_code($order_code);
+
 	// Bail if order is empty / doesn't exist.
 	// We do this early to avoid initializing the DomPDF library if it is unneeded
 	if ( empty( $last_order[0] ) ) {
-	 	return $attachments;
+	 	die();
 	}
 
 	$order_data = $last_order[0];

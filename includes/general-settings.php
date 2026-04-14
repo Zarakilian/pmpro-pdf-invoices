@@ -324,34 +324,22 @@ function pmpro_pdf_invoice_settings_page() {
 			<div class="postbox pmpropdf-section">
 				<h2 class="hndle"><?php esc_html_e( 'Archives', 'pmpro-pdf-invoices' ); ?></h2>
 				<div class="inside">
-					<p class="description"><?php esc_html_e( 'Download PDF invoices as a ZIP file. Use a date range to download invoices for a specific period, or download all at once.', 'pmpro-pdf-invoices' ); ?></p>
-					<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="pmpropdf-date-range-form">
+					<p class="description"><?php esc_html_e( 'Download all stored PDF invoices as a single ZIP file.', 'pmpro-pdf-invoices' ); ?></p>
+					<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 						<input type="hidden" name="page" value="pmpro_pdf_invoices_license_key">
-						<input type="hidden" name="tab" value="tools">
 						<input type="hidden" name="sub_action" value="download_zip_archive">
 						<?php wp_nonce_field( 'pmpropdf_download_zip', 'pmpropdf_download_nonce' ); ?>
-						<div class="pmpropdf-date-range-fields">
-							<label for="pmpropdf_date_preset"><?php esc_html_e( 'Period', 'pmpro-pdf-invoices' ); ?></label>
-							<select id="pmpropdf_date_preset" name="pmpropdf_date_preset">
-								<option value=""><?php esc_html_e( 'Custom range', 'pmpro-pdf-invoices' ); ?></option>
-								<option value="this_month"><?php esc_html_e( 'This month', 'pmpro-pdf-invoices' ); ?></option>
-								<option value="last_month"><?php esc_html_e( 'Last month', 'pmpro-pdf-invoices' ); ?></option>
-								<option value="this_quarter"><?php esc_html_e( 'This quarter', 'pmpro-pdf-invoices' ); ?></option>
-								<option value="this_year"><?php esc_html_e( 'This year', 'pmpro-pdf-invoices' ); ?></option>
-							</select>
-							<label for="pmpropdf_date_from"><?php esc_html_e( 'From', 'pmpro-pdf-invoices' ); ?></label>
-							<input type="date" id="pmpropdf_date_from" name="pmpropdf_date_from">
-							<label for="pmpropdf_date_to"><?php esc_html_e( 'To', 'pmpro-pdf-invoices' ); ?></label>
-							<input type="date" id="pmpropdf_date_to" name="pmpropdf_date_to">
-							<button type="submit" class="button"><?php esc_html_e( 'Download by Date Range', 'pmpro-pdf-invoices' ); ?></button>
-						</div>
+						<label for="pmpropdf_date_from"><?php esc_html_e( 'From Date (YYYY-MM-DD)', 'pmpro-pdf-invoices' ); ?></label>
+						<input type="date" id="pmpropdf_date_from" name="pmpropdf_date_from" placeholder="YYYY-MM-DD">
+						<label for="pmpropdf_date_to"><?php esc_html_e( 'To Date (YYYY-MM-DD)', 'pmpro-pdf-invoices' ); ?></label>
+						<input type="date" id="pmpropdf_date_to" name="pmpropdf_date_to" placeholder="YYYY-MM-DD">
+						<button type="submit" class="button"><?php esc_html_e( 'Download by Date Range', 'pmpro-pdf-invoices' ); ?></button>
 					</form>
 					<p>
 						<a class="button download_zip_btn" href="<?php echo esc_url( wp_nonce_url( pmpropdf_settings_url( array( 'sub_action' => 'download_zip_archive' ) ), 'pmpropdf_download_zip', 'pmpropdf_download_nonce' ) ); ?>">
 							<?php esc_html_e( 'Download All as ZIP', 'pmpro-pdf-invoices' ); ?>
 						</a>
-					</p>
-					<?php if ( current_user_can( 'manage_options' ) ) : ?>
+					</p>					<?php if ( current_user_can( 'manage_options' ) ) : ?>
 						<hr>
 						<p class="description"><?php esc_html_e( 'Permanently delete all stored PDF invoice files from the server. This cannot be undone. PDFs can be regenerated using the tool above.', 'pmpro-pdf-invoices' ); ?></p>
 						<p>
@@ -540,7 +528,28 @@ function pmpro_pdf_invoice_settings_page() {
 							<?php esc_html_e( 'Regenerate Rewrite File', 'pmpro-pdf-invoices' ); ?>
 						</a>
 					</p>
-					<?php endif; ?>
+
+					<hr>
+					<p>
+						<strong><?php esc_html_e( 'PDF Invoice Coverage', 'pmpro-pdf-invoices' ); ?></strong><br>
+						<?php
+						$coverage = pmpropdf_get_pdf_coverage_stats();
+						if ( $coverage ) {
+							printf(
+								/* translators: 1: number of orders with PDFs, 2: total number of orders */
+								esc_html__( '%1$d of %2$d orders have PDF invoices generated.', 'pmpro-pdf-invoices' ),
+								$coverage['with_pdf'],
+								$coverage['total']
+							);
+							if ( $coverage['total'] > 0 ) {
+								$percentage = round( ( $coverage['with_pdf'] / $coverage['total'] ) * 100, 1 );
+								echo ' <strong>(' . esc_html( $percentage ) . '%)</strong>';
+							}
+						} else {
+							esc_html_e( 'Unable to calculate coverage stats.', 'pmpro-pdf-invoices' );
+						}
+						?>
+					</p>
 				</div>
 			</div>
 		</div><!-- .pmpropdf-tab-content -->
