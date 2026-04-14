@@ -338,6 +338,12 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 
 	$dompdf->loadHtml( $body );
 
+	// Set paper size and orientation via filter. Default: 'letter', 'portrait'.
+	// Accepts: string (e.g., 'a4', 'letter', 'legal') or array( width, height ) in points.
+	$paper_size = apply_filters( 'pmpropdf_paper_size', 'letter', $order_data );
+	$paper_orientation = apply_filters( 'pmpropdf_paper_orientation', 'portrait', $order_data );
+	$dompdf->setPaper( $paper_size, $paper_orientation );
+
 	$dompdf = apply_filters( 'pmpropdf_dompdf_before_render', $dompdf );
 
 	$dompdf->render();
