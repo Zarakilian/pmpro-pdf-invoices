@@ -144,6 +144,9 @@ function pmpropdf_attach_pdf_email( $attachments, $email ) {
 	// Make sure there is an order code available, otherwise get it from the user.
 	if ( empty( $email->data['order_code'] ) ) {
 		$user = get_user_by( "email", $email->data['user_email'] );
+		if ( empty( $user ) ) {
+			return $attachments;
+		}
 		$last_order = pmpropdf_get_last_order( $user->ID );
 	} else {
 		$order_code = $email->data['order_code'];
@@ -202,7 +205,9 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		return;
 	}
 
+	// Still get the user, if they don't exist/deleted. We should still be able to generate the PDF for the order.
 	$user = get_user_by('ID', $order_data->user_id);
+
 	$order = new MemberOrder( $order_data->code );
 
 	$dompdf = new Dompdf( apply_filters( 'pmpropdf_dompdf_args', array( 'enable_remote' => true ) ) );
