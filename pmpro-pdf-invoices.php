@@ -367,6 +367,9 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		return false;
 	}
 		
+	// Store a hash of the order data so we can skip regeneration when nothing changed.
+	update_option( 'pmpropdf_hash_' . $order_data->code, pmpropdf_get_order_hash( $order_data ), false );
+
 	do_action( 'pmpropdf_generated_pdf_invoice', $order_data->id, $path );
 
 	return $path;
@@ -1096,7 +1099,36 @@ function pmpropdf_migrate_custom_template(){
 }
 
 /**
- * Regenerate PDF invoice when an order is updated
+ * Build a hash of the order fields that affect the PDF output.
+ *
+ * @since 1.24
+ * @param object $order Order object (MemberOrder or DB row).
+ * @return string MD5 hash of PDF-relevant fields.
+ */
+function pmpropdf_get_order_hash( $order ) {
+	$fields = array(
+		'total'         => isset( $order->total ) ? $order->total : '',
+		'subtotal'      => isset( $order->subtotal ) ? $order->subtotal : '',
+		'tax'           => isset( $order->tax ) ? $order->tax : '',
+		'status'        => isset( $order->status ) ? $order->status : '',
+		'membership_id' => isset( $order->membership_id ) ? $order->membership_id : '',
+		'user_id'       => isset( $order->user_id ) ? $order->user_id : '',
+		'gateway'       => isset( $order->gateway ) ? $order->gateway : '',
+	);
+
+	// Include billing fields if available.
+	if ( ! empty( $order->billing ) ) {
+		foreach ( array( 'name', 'street', 'city', 'state', 'zip', 'country', 'phone' ) as $key ) {
+			$fields[ 'billing_' . $key ] = isset( $order->billing->$key ) ? $order->billing->$key : '';
+		}
+	}
+
+	return md5( serialize( $fields ) );
+}
+
+/**
+ * Regenerate PDF invoice when an order is updated.
+ * Only regenerates if PDF-relevant data has changed.
  *
  * @since 1.9
  */
@@ -1106,8 +1138,17 @@ function pmpropdf_updated_order( $order ) {
 		$invoice_dir = pmpropdf_get_invoice_directory_or_url();
 		$invoice_name = pmpropdf_generate_invoice_name($order->code);
 
-		if(file_exists($invoice_dir . $invoice_name)){
-			unlink($invoice_dir . $invoice_name);
+		// Compare hash of current order data with the stored hash from last generation.
+		$new_hash = pmpropdf_get_order_hash( $order );
+		$stored_hash = get_option( 'pmpropdf_hash_' . $order->code );
+
+		if ( $new_hash === $stored_hash && file_exists( $invoice_dir . $invoice_name ) ) {
+			// Nothing PDF-relevant changed, skip regeneration.
+			return;
+		}
+
+		if ( file_exists( $invoice_dir . $invoice_name ) ) {
+			unlink( $invoice_dir . $invoice_name );
 		}
 
 		$path = pmpropdf_generate_pdf($order);
