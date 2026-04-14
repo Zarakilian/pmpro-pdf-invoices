@@ -322,35 +322,56 @@ function pmpro_pdf_invoice_settings_page() {
 			</div>
 
 			<div class="postbox pmpropdf-section">
-				<h2 class="hndle"><?php esc_html_e( 'Archives', 'pmpro-pdf-invoices' ); ?></h2>
+				<h2 class="hndle"><?php esc_html_e( 'Download Invoices', 'pmpro-pdf-invoices' ); ?></h2>
 				<div class="inside">
 					<p class="description"><?php esc_html_e( 'Download all stored PDF invoices as a single ZIP file.', 'pmpro-pdf-invoices' ); ?></p>
+					<a class="button button-primary download_zip_btn" href="<?php echo esc_url( wp_nonce_url( pmpropdf_settings_url( array( 'sub_action' => 'download_zip_archive' ) ), 'pmpropdf_download_zip', 'pmpropdf_download_nonce' ) ); ?>">
+						<?php esc_html_e( 'Download All as ZIP', 'pmpro-pdf-invoices' ); ?>
+					</a>
+				</div>
+			</div>
+
+			<div class="postbox pmpropdf-section">
+				<h2 class="hndle"><?php esc_html_e( 'Download by Date Range', 'pmpro-pdf-invoices' ); ?></h2>
+				<div class="inside">
+					<p class="description"><?php esc_html_e( 'Download a ZIP of invoices filtered to a specific time period.', 'pmpro-pdf-invoices' ); ?></p>
 					<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 						<input type="hidden" name="page" value="pmpro_pdf_invoices_license_key">
 						<input type="hidden" name="sub_action" value="download_zip_archive">
 						<?php wp_nonce_field( 'pmpropdf_download_zip', 'pmpropdf_download_nonce' ); ?>
-						<label for="pmpropdf_date_from"><?php esc_html_e( 'From Date (YYYY-MM-DD)', 'pmpro-pdf-invoices' ); ?></label>
-						<input type="date" id="pmpropdf_date_from" name="pmpropdf_date_from" placeholder="YYYY-MM-DD">
-						<label for="pmpropdf_date_to"><?php esc_html_e( 'To Date (YYYY-MM-DD)', 'pmpro-pdf-invoices' ); ?></label>
-						<input type="date" id="pmpropdf_date_to" name="pmpropdf_date_to" placeholder="YYYY-MM-DD">
-						<button type="submit" class="button"><?php esc_html_e( 'Download by Date Range', 'pmpro-pdf-invoices' ); ?></button>
+						<select id="pmpropdf_date_preset" name="pmpropdf_date_preset">
+							<option value=""><?php esc_html_e( '— Select a period —', 'pmpro-pdf-invoices' ); ?></option>
+							<option value="this_month"><?php esc_html_e( 'This Month', 'pmpro-pdf-invoices' ); ?></option>
+							<option value="last_month"><?php esc_html_e( 'Last Month', 'pmpro-pdf-invoices' ); ?></option>
+							<option value="this_quarter"><?php esc_html_e( 'This Quarter', 'pmpro-pdf-invoices' ); ?></option>
+							<option value="this_year"><?php esc_html_e( 'This Year', 'pmpro-pdf-invoices' ); ?></option>
+							<option value="custom"><?php esc_html_e( 'Custom Range', 'pmpro-pdf-invoices' ); ?></option>
+						</select>
+						<div id="pmpropdf_custom_date_fields" style="display:none; margin-top: 8px;">
+							<label for="pmpropdf_date_from"><?php esc_html_e( 'From', 'pmpro-pdf-invoices' ); ?></label>
+							<input type="date" id="pmpropdf_date_from" name="pmpropdf_date_from" placeholder="YYYY-MM-DD">
+							<label for="pmpropdf_date_to"><?php esc_html_e( 'To', 'pmpro-pdf-invoices' ); ?></label>
+							<input type="date" id="pmpropdf_date_to" name="pmpropdf_date_to" placeholder="YYYY-MM-DD">
+						</div>
+						<button type="submit" class="button button-primary" id="pmpropdf_date_submit" style="display:block; margin-top: 8px;" disabled>
+							<?php esc_html_e( 'Download ZIP', 'pmpro-pdf-invoices' ); ?>
+						</button>
 					</form>
-					<p>
-						<a class="button download_zip_btn" href="<?php echo esc_url( wp_nonce_url( pmpropdf_settings_url( array( 'sub_action' => 'download_zip_archive' ) ), 'pmpropdf_download_zip', 'pmpropdf_download_nonce' ) ); ?>">
-							<?php esc_html_e( 'Download All as ZIP', 'pmpro-pdf-invoices' ); ?>
-						</a>
-					</p>					<?php if ( current_user_can( 'manage_options' ) ) : ?>
-						<hr>
-						<p class="description"><?php esc_html_e( 'Permanently delete all stored PDF invoice files from the server. This cannot be undone. PDFs can be regenerated using the tool above.', 'pmpro-pdf-invoices' ); ?></p>
-						<p>
-							<a class="button pmpropdf-delete-all-btn"
-							   href="<?php echo esc_url( wp_nonce_url( pmpropdf_settings_url( array( 'sub_action' => 'delete_all_pdfs' ) ), 'pmpropdf_delete_all_pdfs' ) ); ?>">
-								<?php esc_html_e( 'Delete All PDF Invoices', 'pmpro-pdf-invoices' ); ?>
-							</a>
-						</p>
-					<?php endif; ?>
 				</div>
 			</div>
+
+			<?php if ( current_user_can( 'manage_options' ) ) : ?>
+			<div class="postbox pmpropdf-section">
+				<h2 class="hndle"><?php esc_html_e( 'Danger Zone', 'pmpro-pdf-invoices' ); ?></h2>
+				<div class="inside">
+					<p class="description"><?php esc_html_e( 'Permanently delete all stored PDF invoice files from the server. This cannot be undone. PDFs can be regenerated using the Generate Invoices tool above.', 'pmpro-pdf-invoices' ); ?></p>
+					<a class="button pmpropdf-delete-all-btn"
+					   href="<?php echo esc_url( wp_nonce_url( pmpropdf_settings_url( array( 'sub_action' => 'delete_all_pdfs' ) ), 'pmpropdf_delete_all_pdfs' ) ); ?>">
+						<?php esc_html_e( 'Delete All PDF Invoices', 'pmpro-pdf-invoices' ); ?>
+					</a>
+				</div>
+			</div>
+			<?php endif; ?>
 
 			<?php if ( ! pmpropdf_has_pmpro_restricted_directory() && ! empty( $_SERVER['SERVER_SOFTWARE'] ) && strpos( $_SERVER['SERVER_SOFTWARE'], 'nginx' ) !== false ) :
 				$_upload_dir = wp_upload_dir();

@@ -71,6 +71,23 @@ jQuery( function ( $ ) {
 		var fromStr = '';
 		var toStr   = '';
 
+		if ( preset === 'custom' ) {
+			$( '#pmpropdf_custom_date_fields' ).show();
+			$( '#pmpropdf_date_from' ).val( '' );
+			$( '#pmpropdf_date_to' ).val( '' );
+			$( '#pmpropdf_date_submit' ).prop( 'disabled', true );
+			return;
+		}
+
+		$( '#pmpropdf_custom_date_fields' ).hide();
+		$( '#pmpropdf_date_from' ).val( '' );
+		$( '#pmpropdf_date_to' ).val( '' );
+
+		if ( ! preset ) {
+			$( '#pmpropdf_date_submit' ).prop( 'disabled', true );
+			return;
+		}
+
 		switch ( preset ) {
 			case 'this_month':
 				fromStr = pmpropdf_format_date( year, month, 1 );
@@ -93,10 +110,13 @@ jQuery( function ( $ ) {
 
 		$( '#pmpropdf_date_from' ).val( fromStr );
 		$( '#pmpropdf_date_to' ).val( toStr );
+		$( '#pmpropdf_date_submit' ).prop( 'disabled', false );
 	} );
 
 	$( '#pmpropdf_date_from, #pmpropdf_date_to' ).on( 'change', function () {
-		$( '#pmpropdf_date_preset' ).val( '' );
+		var from = $( '#pmpropdf_date_from' ).val();
+		var to   = $( '#pmpropdf_date_to' ).val();
+		$( '#pmpropdf_date_submit' ).prop( 'disabled', ! from || ! to );
 	} );
 
 	/* -------------------------------------------------------------------------
