@@ -205,11 +205,8 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		return;
 	}
 
+	// Still get the user, if they don't exist/deleted. We should still be able to generate the PDF for the order.
 	$user = get_user_by('ID', $order_data->user_id);
-
-	if ( empty( $user ) ) {
-		return false;
-	}
 
 	$order = new MemberOrder( $order_data->code );
 
