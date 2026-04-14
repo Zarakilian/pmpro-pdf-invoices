@@ -325,12 +325,21 @@ function pmpro_pdf_invoice_settings_page() {
 				<h2 class="hndle"><?php esc_html_e( 'Archives', 'pmpro-pdf-invoices' ); ?></h2>
 				<div class="inside">
 					<p class="description"><?php esc_html_e( 'Download all stored PDF invoices as a single ZIP file.', 'pmpro-pdf-invoices' ); ?></p>
+					<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+						<input type="hidden" name="page" value="pmpro_pdf_invoices_license_key">
+						<input type="hidden" name="sub_action" value="download_zip_archive">
+						<?php wp_nonce_field( 'pmpropdf_download_zip', 'pmpropdf_download_nonce' ); ?>
+						<label for="pmpropdf_date_from"><?php esc_html_e( 'From Date (YYYY-MM-DD)', 'pmpro-pdf-invoices' ); ?></label>
+						<input type="date" id="pmpropdf_date_from" name="pmpropdf_date_from" placeholder="YYYY-MM-DD">
+						<label for="pmpropdf_date_to"><?php esc_html_e( 'To Date (YYYY-MM-DD)', 'pmpro-pdf-invoices' ); ?></label>
+						<input type="date" id="pmpropdf_date_to" name="pmpropdf_date_to" placeholder="YYYY-MM-DD">
+						<button type="submit" class="button"><?php esc_html_e( 'Download by Date Range', 'pmpro-pdf-invoices' ); ?></button>
+					</form>
 					<p>
 						<a class="button download_zip_btn" href="<?php echo esc_url( pmpropdf_settings_url( array( 'sub_action' => 'download_zip_archive' ) ) ); ?>">
 							<?php esc_html_e( 'Download All as ZIP', 'pmpro-pdf-invoices' ); ?>
 						</a>
-					</p>
-					<?php if ( current_user_can( 'manage_options' ) ) : ?>
+					</p>					<?php if ( current_user_can( 'manage_options' ) ) : ?>
 						<hr>
 						<p class="description"><?php esc_html_e( 'Permanently delete all stored PDF invoice files from the server. This cannot be undone. PDFs can be regenerated using the tool above.', 'pmpro-pdf-invoices' ); ?></p>
 						<p>
