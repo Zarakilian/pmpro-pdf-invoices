@@ -6,7 +6,8 @@ jQuery( function ( $ ) {
 	pmpropdf_js.batch_process = {
 		total_count:   0,
 		total_created: 0,
-		total_skipped: 0
+		total_skipped: 0,
+		total_orders:  0
 	};
 
 	/* -------------------------------------------------------------------------
@@ -21,8 +22,11 @@ jQuery( function ( $ ) {
 			return;
 		}
 
-		pmpropdf_js.batch_process = { total_count: 0, total_created: 0, total_skipped: 0 };
+		pmpropdf_js.batch_process = { total_count: 0, total_created: 0, total_skipped: 0, total_orders: 0 };
 		$( '.missing_invoice_log' ).html( '<div class="item">' + ( force ? 'Regenerating all invoices&hellip;' : 'Generating missing invoices&hellip;' ) + '</div>' );
+		$( '#pmpropdf_progress_wrap' ).hide();
+		$( '#pmpropdf_progress_bar' ).val( 0 );
+		$( '#pmpropdf_progress_label' ).text( '' );
 		pmpropdf_ajax_batch_loop( 100, 0, force ? '1' : '0' );
 	} );
 
@@ -170,7 +174,14 @@ function pmpropdf_ajax_batch_loop( batch_size, batch_no, force ) {
 
 			if ( typeof response.error !== 'undefined' ) {
 				jQuery( '.missing_invoice_log' ).html( '<div class="item">' + response.error + '</div>' );
+				jQuery( '#pmpropdf_progress_wrap' ).hide();
 				return;
+			}
+
+			// Capture total order count from first batch response.
+			if ( response.total_orders ) {
+				pmpropdf_js.batch_process.total_orders = response.total_orders;
+				jQuery( '#pmpropdf_progress_wrap' ).show();
 			}
 
 			pmpropdf_js.batch_process.total_count   += response.batch_count || 0;
@@ -182,6 +193,12 @@ function pmpropdf_ajax_batch_loop( batch_size, batch_no, force ) {
 			if ( typeof response.batch_count !== 'undefined' && response.batch_count >= batch_size ) {
 				pmpropdf_ajax_batch_loop( batch_size, response.batch_no + 1, force );
 			} else {
+				// Set bar to 100% on completion.
+				jQuery( '#pmpropdf_progress_bar' ).val( 100 );
+				jQuery( '#pmpropdf_progress_label' ).text(
+					pmpropdf_js.batch_process.total_orders + ' / ' + pmpropdf_js.batch_process.total_orders + ' orders (100%)'
+				);
+
 				var msg;
 				if ( force === '1' ) {
 					msg = 'Regeneration complete.';
@@ -197,6 +214,16 @@ function pmpropdf_ajax_batch_loop( batch_size, batch_no, force ) {
 }
 
 function pmpropdf_update_batch_stats() {
+	var total = pmpropdf_js.batch_process.total_orders;
+	var count = pmpropdf_js.batch_process.total_count;
+
+	// Update progress bar if we have a total.
+	if ( total > 0 ) {
+		var pct = Math.min( 100, Math.round( ( count / total ) * 100 ) );
+		jQuery( '#pmpropdf_progress_bar' ).val( pct );
+		jQuery( '#pmpropdf_progress_label' ).text( count + ' / ' + total + ' orders (' + pct + '%)' );
+	}
+
 	jQuery( '.missing_invoice_log' ).html(
 		'<div class="item">' +
 			'Processed: ' + pmpropdf_js.batch_process.total_count   + '<br>' +
