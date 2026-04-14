@@ -81,7 +81,7 @@ function pmpro_pdf_invoice_settings_page() {
 	wp_enqueue_media();
 	wp_enqueue_script( 'pmpropdf-settings-scripts', plugin_dir_url( __FILE__ ) . 'js/settings-scripts.js', array( 'jquery' ), PMPRO_PDF_VERSION );
 	wp_localize_script( 'pmpropdf-settings-scripts', 'pmpropdf_js', array(
-		'ajax_url' => admin_url( 'admin-ajax.php' ),
+		'ajax_url' => admin_url( 'admin-ajax.php', 'relative' ),
 	) );
 
 	// Load license data.
