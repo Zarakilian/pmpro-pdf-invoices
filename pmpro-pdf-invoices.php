@@ -61,15 +61,65 @@ function pmpropdf_init() {
 		include PMPRO_PDF_DIR . '/includes/download-pdf.php';
 	}
 
-	/** Check if the strict redirect is in place*/
-	if(pmpropdf_check_rewrite_active()){
-		//Silence in this case
+	// When PMPro's restricted directory is available it handles file protection
+	// natively, so the legacy .htaccess rewrite is unnecessary.
+	if ( ! pmpropdf_has_pmpro_restricted_directory() ) {
+		pmpropdf_check_rewrite_active();
 	}
 
 	pmpropdf_check_should_zip();
 }
 add_action( 'init', 'pmpropdf_init' );
 
+/**
+ * Migrate invoices from the legacy /uploads/pmpro-invoices/ directory into
+ * PMPro's restricted content directory. Runs once on admin_init.
+ *
+ * @since 1.24
+ */
+function pmpropdf_maybe_migrate_to_restricted_directory() {
+	if ( ! pmpropdf_has_pmpro_restricted_directory() ) {
+		return;
+	}
+	if ( get_option( 'pmpropdf_migrated_to_restricted_dir' ) ) {
+		return;
+	}
+
+	$upload_dir = wp_upload_dir();
+	$legacy_dir = trailingslashit( $upload_dir['basedir'] ) . 'pmpro-invoices/';
+
+	if ( ! is_dir( $legacy_dir ) ) {
+		update_option( 'pmpropdf_migrated_to_restricted_dir', true );
+		return;
+	}
+
+	$new_dir = pmpro_get_restricted_file_path( 'pmpro-invoices' );
+
+	$files = glob( $legacy_dir . '*.pdf' );
+	if ( ! empty( $files ) ) {
+		foreach ( $files as $file ) {
+			$basename = basename( $file );
+			$new_path = $new_dir . $basename;
+			if ( ! file_exists( $new_path ) ) {
+				if ( copy( $file, $new_path ) ) {
+					unlink( $file );
+				}
+			}
+		}
+	}
+
+	$legacy_htaccess = $legacy_dir . '.htaccess';
+	if ( file_exists( $legacy_htaccess ) ) {
+		unlink( $legacy_htaccess );
+	}
+	if ( is_dir( $legacy_dir ) && count( glob( $legacy_dir . '*' ) ) === 0 ) {
+		rmdir( $legacy_dir );
+	}
+
+	delete_option( PMPRO_PDF_REWRITE_TOKEN );
+	update_option( 'pmpropdf_migrated_to_restricted_dir', true );
+}
+add_action( 'admin_init', 'pmpropdf_maybe_migrate_to_restricted_directory' );
 
 function pmpropdf_settings_page() {
 	// Register under the Memberships menu if PMPro is active, otherwise fall back to Settings.
@@ -456,10 +506,39 @@ function pmpropdf_get_order_by_code( $order_code ) {
 }
 
 /**
- * Returns the invoice storage directory
- * Creates it if it does no exist
+ * Check if PMPro's restricted content directory system is available.
+ *
+ * @since 1.24
+ * @return bool
+ */
+function pmpropdf_has_pmpro_restricted_directory() {
+	return function_exists( 'pmpro_get_restricted_file_path' );
+}
+
+/**
+ * Returns the invoice storage directory.
+ * Creates it if it does not exist.
+ *
+ * When PMPro's restricted content directory is available, invoices are stored
+ * inside it for native file protection. Otherwise falls back to the legacy
+ * custom directory with its own .htaccess protection.
 */
 function pmpropdf_get_invoice_directory_or_url($url = false){
+	// Use PMPro's restricted directory when available.
+	if ( pmpropdf_has_pmpro_restricted_directory() ) {
+		if ( $url ) {
+			return add_query_arg(
+				array(
+					'pmpro_restricted_file_dir' => 'pmpro-invoices',
+					'pmpro_restricted_file'     => '',
+				),
+				site_url( '/' )
+			);
+		}
+		return pmpro_get_restricted_file_path( 'pmpro-invoices' );
+	}
+
+	// Legacy fallback: custom directory with self-managed .htaccess.
 	$upload_dir = wp_upload_dir();
 	$invoice_dir = ($url ? $upload_dir['baseurl'] : $upload_dir['basedir'] ) . '/pmpro-invoices/';
 
@@ -687,6 +766,44 @@ function pmpropdf_get_rewrite_token(){
 
 	return $access_token;
 }
+
+/**
+ * Allow access to PDF invoices stored in PMPro's restricted content directory.
+ *
+ * @since 1.24
+ *
+ * @param bool   $can_access Whether the user can access the file.
+ * @param string $file_dir   The subdirectory inside the restricted directory.
+ * @param string $file       The filename being requested.
+ * @return bool
+ */
+function pmpropdf_can_access_restricted_file( $can_access, $file_dir, $file ) {
+	if ( $file_dir !== 'pmpro-invoices' ) {
+		return $can_access;
+	}
+	if ( ! is_user_logged_in() ) {
+		return false;
+	}
+	if ( current_user_can( 'pmpro_orders' ) ) {
+		return true;
+	}
+
+	// Extract the order code from the invoice filename (e.g. "INVabc123.pdf" → "abc123").
+	$invoice_prefix = apply_filters( 'pmpro_pdf_invoice_prefix', 'INV' );
+	$order_code     = preg_replace( '/^' . preg_quote( $invoice_prefix, '/' ) . '|\.pdf$/i', '', $file );
+
+	if ( empty( $order_code ) ) {
+		return false;
+	}
+
+	$order = pmpropdf_get_order_by_code( $order_code );
+	if ( ! empty( $order[0] ) && intval( $order[0]->user_id ) === get_current_user_id() ) {
+		return true;
+	}
+
+	return false;
+}
+add_filter( 'pmpro_can_access_restricted_file', 'pmpropdf_can_access_restricted_file', 10, 3 );
 
 /**
  * Shortcode handler for the invoice list based on current user
@@ -968,6 +1085,54 @@ function pmpropdf_check_should_zip(){
 					wp_die(__('No PDF invoices found for the selected date range.', 'pmpro-pdf-invoices'));
 				}
 			}
+
+			if ( empty( $pdfs ) ) {
+				$redirect_url = add_query_arg(
+					array( 'page' => 'pmpro_pdf_invoices_license_key', 'tab' => 'tools', 'pmpropdf_notice' => 'no_pdfs' ),
+					admin_url( 'admin.php' )
+				);
+				wp_safe_redirect( $redirect_url );
+				exit;
+			}
+
+			if ( ! empty( $date_from ) && ! empty( $date_to ) ) {
+				$archive_label = 'invoices_' . $date_from . '_to_' . $date_to;
+			} elseif ( ! empty( $date_from ) ) {
+				$archive_label = 'invoices_from_' . $date_from;
+			} elseif ( ! empty( $date_to ) ) {
+				$archive_label = 'invoices_to_' . $date_to;
+			} else {
+				$archive_label = 'invoices_all_' . gmdate( 'Y-m-d' );
+			}
+			$archive_name = tempnam( sys_get_temp_dir(), 'pmpropdf_' ) . '.zip';
+
+			$archive = new ZipArchive;
+			if ( $archive->open( $archive_name, ZipArchive::CREATE ) === true ) {
+				foreach ( $pdfs as $path ) {
+					$archive->addFromString( basename( $path ), file_get_contents( $path ) );
+				}
+
+				if ( ! empty( $missing_codes ) ) {
+					$manifest  = "The following order codes did not have a PDF on disk:\n\n";
+					$manifest .= implode( "\n", $missing_codes );
+					$manifest .= "\n\nYou can regenerate these from the Tools tab.";
+					$archive->addFromString( 'missing_invoices.txt', $manifest );
+				}
+
+				$archive->close();
+
+				while ( ob_get_level() ) {
+					ob_end_clean();
+				}
+
+				header( 'Content-Type: application/zip' );
+				header( 'Content-Disposition: attachment; filename="' . $archive_label . '.zip"' );
+				header( 'Content-Length: ' . filesize( $archive_name ) );
+				readfile( $archive_name );
+
+				@unlink( $archive_name );
+				exit;
+			}
 		}
 	}
 }function pmpropdf_footer_note ($footnote){
@@ -981,6 +1146,10 @@ add_filter('admin_footer_text', 'pmpropdf_footer_note', 10, 1);
 
 
 function pmpropdf_nginx_notice () {
+
+	if ( pmpropdf_has_pmpro_restricted_directory() ) {
+		return;
+	}
 
 	if ( empty( $_REQUEST['page'] ) || strpos( $_REQUEST['page'], 'pmpro' ) === false ) {
 		return;
@@ -1343,124 +1512,6 @@ function pmpropdf_check_license_valid_api( $license_key ) {
 	}
 }
 
-// =============================================================================
-// EDIT ORDER VIEW SUPPORT
-// =============================================================================
-
-/**
- * Render the PDF invoice box on the PMPro Edit Order admin page.
- *
- * PMPro needs to fire `do_action( 'pmpro_order_edit_after', $order )` on its
- * single-order edit page for this to work natively. When that hook is available
- * this callback will be used automatically.
- *
- * @param MemberOrder $order The order being edited.
- */
-function pmpropdf_order_edit_pdf_box( $order ) {
-	if ( empty( $order ) || empty( $order->code ) ) {
-		return;
-	}
-
-	$invoice_dir  = pmpropdf_get_invoice_directory_or_url();
-	$invoice_name = pmpropdf_generate_invoice_name( $order->code );
-	$pdf_exists   = file_exists( $invoice_dir . $invoice_name );
-	?>
-	<div class="pmpropdf-order-edit-box" style="margin-top: 20px;">
-		<h3 style="margin-bottom: 6px;"><?php esc_html_e( 'PDF Invoice', 'pmpro-pdf-invoices' ); ?></h3>
-		<?php if ( $pdf_exists ) : ?>
-			<a href="<?php echo esc_url( admin_url( '?pmpropdf=' . $order->code ) ); ?>" class="button" target="_blank">
-				<?php esc_html_e( 'Download PDF Invoice', 'pmpro-pdf-invoices' ); ?>
-			</a>
-		<?php else : ?>
-			<a href="javascript:void(0)"
-			   id="pmpro-pdf-generate_<?php echo esc_attr( $order->code ); ?>"
-			   class="button pmpro-pdf-generate"
-			   order_code="<?php echo esc_attr( $order->code ); ?>">
-				<?php esc_html_e( 'Generate PDF Invoice', 'pmpro-pdf-invoices' ); ?>
-			</a>
-		<?php endif; ?>
-		<p class="description" style="margin-top: 6px;">
-			<?php esc_html_e( 'Generate or download the PDF invoice for this order.', 'pmpro-pdf-invoices' ); ?>
-		</p>
-	</div>
-	<?php
-}
-/**
- * Hook into PMPro's Edit Order page action.
- * Requires PMPro to call: do_action( 'pmpro_order_edit_after', $order )
- */
-add_action( 'pmpro_order_edit_after', 'pmpropdf_order_edit_pdf_box', 10, 1 );
-
-/**
- * Fallback: detect the PMPro order edit page via admin_footer and inject
- * the PDF invoice button. This handles PMPro versions that do not yet fire
- * `pmpro_order_edit_after`.
- *
- * Supported URL patterns:
- *   admin.php?page=pmpro-membershiporders-edit&id=X
- *   admin.php?page=pmpro-orders&edit=X (legacy)
- */
-function pmpropdf_order_edit_fallback_footer() {
-	if ( ! is_admin() || ! current_user_can( 'pmpro_orders' ) ) {
-		return;
-	}
-
-	// Detect order edit page by known PMPro page slugs.
-	$page = isset( $_GET['page'] ) ? sanitize_key( $_GET['page'] ) : '';
-
-	$order_id = 0;
-	if ( $page === 'pmpro-membershiporders-edit' && ! empty( $_GET['id'] ) ) {
-		$order_id = intval( $_GET['id'] );
-	} elseif ( $page === 'pmpro-orders' && ! empty( $_GET['edit'] ) ) {
-		$order_id = intval( $_GET['edit'] );
-	}
-
-	if ( empty( $order_id ) || ! class_exists( 'MemberOrder' ) ) {
-		return;
-	}
-
-	$order = new MemberOrder( $order_id );
-	if ( empty( $order->code ) ) {
-		return;
-	}
-
-	$invoice_dir  = pmpropdf_get_invoice_directory_or_url();
-	$invoice_name = pmpropdf_generate_invoice_name( $order->code );
-	$pdf_exists   = file_exists( $invoice_dir . $invoice_name );
-
-	if ( $pdf_exists ) {
-		$button_html = '<a href="' . esc_url( admin_url( '?pmpropdf=' . $order->code ) ) . '" class="button" target="_blank">' . esc_html__( 'Download PDF Invoice', 'pmpro-pdf-invoices' ) . '</a>';
-	} else {
-		$button_html = '<a href="javascript:void(0)" id="pmpro-pdf-generate_' . esc_attr( $order->code ) . '" class="button pmpro-pdf-generate" order_code="' . esc_attr( $order->code ) . '">' . esc_html__( 'Generate PDF Invoice', 'pmpro-pdf-invoices' ) . '</a>';
-	}
-
-	$description = esc_html__( 'Generate or download the PDF invoice for this order.', 'pmpro-pdf-invoices' );
-	$heading     = esc_html__( 'PDF Invoice', 'pmpro-pdf-invoices' );
-	?>
-	<script type="text/javascript">
-	jQuery( document ).ready( function( $ ) {
-		// Only inject if pmpro_order_edit_after hasn't already rendered the box.
-		if ( $( '.pmpropdf-order-edit-box' ).length ) {
-			return;
-		}
-		var html = '<div class="pmpropdf-order-edit-box postbox" style="margin-top: 20px; padding: 12px 16px;">' +
-			'<h3 style="margin: 0 0 8px;"><?php echo $heading; ?></h3>' +
-			'<?php echo $button_html; ?>' +
-			'<p class="description" style="margin-top: 8px;"><?php echo $description; ?></p>' +
-			'</div>';
-
-		// Append after the last visible postbox or form on the page.
-		var $target = $( '#post, form.pmpro_form, #wpbody-content .wrap form' ).last();
-		if ( $target.length ) {
-			$target.after( html );
-		} else {
-			$( '#wpbody-content .wrap' ).append( html );
-		}
-	} );
-	</script>
-	<?php
-}
-add_action( 'admin_footer', 'pmpropdf_order_edit_fallback_footer' );
 
 // =============================================================================
 // VIEW ORDER SCREEN – ORDER ACTIONS
