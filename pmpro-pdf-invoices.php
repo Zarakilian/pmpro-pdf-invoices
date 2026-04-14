@@ -878,94 +878,117 @@ function pmpropdf_check_should_zip(){
 				}
 			}
 		}
-	} else if (!empty($_GET['page']) && !empty($_GET['sub_action'])){
-		if($_GET['page'] === 'pmpro_pdf-invoices_license_key' && $_GET['sub_action'] === 'download_zip_archive'){
+	} else if ( ! empty( $_GET['page'] ) && ! empty( $_GET['sub_action'] ) ) {
+		if ( $_GET['page'] === 'pmpro_pdf_invoices_license_key' && $_GET['sub_action'] === 'download_zip_archive' ) {
 			/* This is an admin download, processes here for the sake of header output */
-			if(current_user_can('administrator') && class_exists('ZipArchive')){
+			if ( current_user_can( 'manage_options' ) && class_exists( 'ZipArchive' ) ) {
+
+				// Verify nonce for all downloads.
+				if ( ! isset( $_GET['pmpropdf_download_nonce'] ) || ! wp_verify_nonce( $_GET['pmpropdf_download_nonce'], 'pmpropdf_download_zip' ) ) {
+					wp_die( __( 'Security check failed.', 'pmpro-pdf-invoices' ) );
+				}
+
 				global $wpdb;
-				
-				// Date filtering parameters
-				$date_from = !empty($_GET['pmpropdf_date_from']) ? sanitize_text_field($_GET['pmpropdf_date_from']) : '';
-				$date_to = !empty($_GET['pmpropdf_date_to']) ? sanitize_text_field($_GET['pmpropdf_date_to']) : '';
-				$has_date_filter = !empty($date_from) || !empty($date_to);
-				
-				$pdfs = array();
-				
-				if ($has_date_filter) {
-					// Verify nonce for date-filtered downloads
-					if (!isset($_GET['pmpropdf_download_nonce']) || !wp_verify_nonce($_GET['pmpropdf_download_nonce'], 'pmpropdf_download_zip')) {
-						wp_die(__('Security check failed.', 'pmpro-pdf-invoices'));
+
+				$date_from     = ! empty( $_GET['pmpropdf_date_from'] ) ? sanitize_text_field( $_GET['pmpropdf_date_from'] ) : '';
+				$date_to       = ! empty( $_GET['pmpropdf_date_to'] ) ? sanitize_text_field( $_GET['pmpropdf_date_to'] ) : '';
+				$pdfs          = array();
+				$missing_codes = array();
+
+				if ( ! empty( $date_from ) || ! empty( $date_to ) ) {
+					// Validate date format (YYYY-MM-DD).
+					if ( ! empty( $date_from ) && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_from ) ) {
+						wp_die( __( 'Invalid date format for date_from.', 'pmpro-pdf-invoices' ) );
 					}
-					
-					// Validate date format (YYYY-MM-DD)
-					if (!empty($date_from) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_from)) {
-						wp_die(__('Invalid date format for date_from.', 'pmpro-pdf-invoices'));
+					if ( ! empty( $date_to ) && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_to ) ) {
+						wp_die( __( 'Invalid date format for date_to.', 'pmpro-pdf-invoices' ) );
 					}
-					if (!empty($date_to) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_to)) {
-						wp_die(__('Invalid date format for date_to.', 'pmpro-pdf-invoices'));
-					}
-					
-					// Build WHERE clause for date range
+
+					// Build WHERE clause for date range.
 					$where = array();
-					if (!empty($date_from)) {
-						$where[] = $wpdb->prepare('timestamp >= %s', $date_from . ' 00:00:00');
+					if ( ! empty( $date_from ) ) {
+						$where[] = $wpdb->prepare( 'timestamp >= %s', $date_from . ' 00:00:00' );
 					}
-					if (!empty($date_to)) {
-						$where[] = $wpdb->prepare('timestamp <= %s', $date_to . ' 23:59:59');
+					if ( ! empty( $date_to ) ) {
+						$where[] = $wpdb->prepare( 'timestamp <= %s', $date_to . ' 23:59:59' );
 					}
-					$where_sql = implode(' AND ', $where);
-					
-					// Get orders within date range
-					$orders = $wpdb->get_results("
+					$where_sql = implode( ' AND ', $where );
+
+					$orders = $wpdb->get_results( "
 						SELECT code
 						FROM $wpdb->pmpro_membership_orders
 						WHERE $where_sql
 						AND status NOT IN('review', 'token', 'error')
 						ORDER BY timestamp ASC
-					");
-					
-					foreach ($orders as $order) {
-						$filepath = pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name($order->code);
-						if (file_exists($filepath) && is_readable($filepath)) {
+					" );
+
+					foreach ( $orders as $order ) {
+						$filepath = pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name( $order->code );
+						if ( file_exists( $filepath ) && is_readable( $filepath ) ) {
 							$pdfs[] = $filepath;
+						} else {
+							$missing_codes[] = $order->code;
 						}
 					}
 				} else {
-					// No date filter: scan all PDFs as before
+					// No date filter: scan all PDFs.
 					$invoice_dir = pmpropdf_get_invoice_directory_or_url();
-					if (file_exists($invoice_dir)) {
-						$files = scandir($invoice_dir);
-						foreach ($files as $file) {
-							if (strpos($file, '.pdf') !== FALSE) {
-								$pdfs[] = pmpropdf_get_invoice_directory_or_url() . $file;
+					if ( file_exists( $invoice_dir ) ) {
+						foreach ( scandir( $invoice_dir ) as $file ) {
+							if ( substr( $file, -4 ) === '.pdf' ) {
+								$pdfs[] = $invoice_dir . $file;
 							}
 						}
 					}
 				}
-				
-				if (!empty($pdfs)) {
-					$archive_name = 'invoices_archive_' . time() . '.zip';
-					$archive = new ZipArchive;
-					if ($archive->open($archive_name, ZipArchive::CREATE) === TRUE) {
-						foreach ($pdfs as $path) {
-							$archive->addFromString(basename($path), file_get_contents($path));
-						}
-						$archive->close();
 
-						while (ob_get_level()) {
-							ob_end_clean();
-						}
+				if ( empty( $pdfs ) ) {
+					$redirect_url = add_query_arg(
+						array( 'page' => 'pmpro_pdf_invoices_license_key', 'tab' => 'tools', 'pmpropdf_notice' => 'no_pdfs' ),
+						admin_url( 'admin.php' )
+					);
+					wp_safe_redirect( $redirect_url );
+					exit;
+				}
 
-						header('Content-Type: application/zip');
-						header('Content-disposition: attachment; filename=' . $archive_name);
-						header('Content-Length: ' . filesize($archive_name));
-						readfile($archive_name);
-
-						@unlink($archive_name);
-						exit;
-					}
+				// Build archive filename.
+				if ( ! empty( $date_from ) && ! empty( $date_to ) ) {
+					$archive_label = 'invoices_' . $date_from . '_to_' . $date_to;
+				} elseif ( ! empty( $date_from ) ) {
+					$archive_label = 'invoices_from_' . $date_from;
+				} elseif ( ! empty( $date_to ) ) {
+					$archive_label = 'invoices_to_' . $date_to;
 				} else {
-					wp_die(__('No PDF invoices found for the selected date range.', 'pmpro-pdf-invoices'));
+					$archive_label = 'invoices_all_' . gmdate( 'Y-m-d' );
+				}
+				$archive_name = tempnam( sys_get_temp_dir(), 'pmpropdf_' ) . '.zip';
+
+				$archive = new ZipArchive;
+				if ( $archive->open( $archive_name, ZipArchive::CREATE ) === true ) {
+					foreach ( $pdfs as $path ) {
+						$archive->addFromString( basename( $path ), file_get_contents( $path ) );
+					}
+
+					if ( ! empty( $missing_codes ) ) {
+						$manifest  = "The following order codes did not have a PDF on disk:\n\n";
+						$manifest .= implode( "\n", $missing_codes );
+						$manifest .= "\n\nYou can regenerate these from the Tools tab.";
+						$archive->addFromString( 'missing_invoices.txt', $manifest );
+					}
+
+					$archive->close();
+
+					while ( ob_get_level() ) {
+						ob_end_clean();
+					}
+
+					header( 'Content-Type: application/zip' );
+					header( 'Content-Disposition: attachment; filename="' . $archive_label . '.zip"' );
+					header( 'Content-Length: ' . filesize( $archive_name ) );
+					readfile( $archive_name );
+
+					@unlink( $archive_name );
+					exit;
 				}
 			}
 		}
