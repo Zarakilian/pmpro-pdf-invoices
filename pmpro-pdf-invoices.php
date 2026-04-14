@@ -1067,7 +1067,7 @@ function pmpropdf_ajax_generate_pdf_invoice() {
 	// Bail if order is empty / doesn't exist.
 	// We do this early to avoid initializing the DomPDF library if it is unneeded
 	if ( empty( $last_order[0] ) ) {
-	 	return $attachments;
+	 	die();
 	}
 
 	$order_data = $last_order[0];
