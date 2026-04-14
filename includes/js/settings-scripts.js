@@ -170,7 +170,13 @@ function pmpropdf_ajax_batch_loop( batch_size, batch_no, force ) {
 			force:      force
 		},
 		success: function ( response ) {
-			response = JSON.parse( response );
+			try {
+				response = JSON.parse( response );
+			} catch ( e ) {
+				jQuery( '.missing_invoice_log' ).html( '<div class="item">Unexpected server response. Check for PHP errors in your debug log.</div>' );
+				jQuery( '#pmpropdf_progress_wrap' ).hide();
+				return;
+			}
 
 			if ( typeof response.error !== 'undefined' ) {
 				jQuery( '.missing_invoice_log' ).html( '<div class="item">' + response.error + '</div>' );
@@ -209,6 +215,10 @@ function pmpropdf_ajax_batch_loop( batch_size, batch_no, force ) {
 				}
 				jQuery( '.missing_invoice_log' ).append( '<div class="item">' + msg + '</div>' );
 			}
+		},
+		error: function ( xhr ) {
+			jQuery( '.missing_invoice_log' ).html( '<div class="item">AJAX request failed (HTTP ' + xhr.status + '). Check your server error log.</div>' );
+			jQuery( '#pmpropdf_progress_wrap' ).hide();
 		}
 	} );
 }
