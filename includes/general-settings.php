@@ -307,6 +307,10 @@ function pmpro_pdf_invoice_settings_page() {
 					<div class="missing_invoice_log">
 						<div class="item"><?php esc_html_e( 'No output yet...', 'pmpro-pdf-invoices' ); ?></div>
 					</div>
+					<div id="pmpropdf_progress_wrap" style="display:none; margin: 8px 0;">
+						<progress id="pmpropdf_progress_bar" value="0" max="100" style="width:100%; height:20px;"></progress>
+						<span id="pmpropdf_progress_label" style="display:block; margin-top:4px; font-size:13px;"></span>
+					</div>
 					<br>
 					<button class="button button-primary generate_missing_logs" data-force="0">
 						<?php esc_html_e( 'Generate Missing Invoices', 'pmpro-pdf-invoices' ); ?>
