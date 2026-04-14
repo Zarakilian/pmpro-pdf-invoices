@@ -704,7 +704,7 @@ function pmpropdf_download_list_shortcode_handler(){
 				$content .=		'<td>' . pmpro_formatPrice($invoice->total) . '</td>';
 				$content .= '<td class="' . esc_attr( pmpro_get_element_class( 'pmpro_table_order-status' ) ) . '" data-title="' . esc_attr__( 'Status', 'pmpro-pdf-invoices' ) . '">';
 				$content .= '<span class="' . esc_attr( pmpro_get_element_class( 'pmpro_tag pmpro_tag-' . $tag_style ) ) . '">' . esc_html( $display_status ) . '</span></td>';
-				$content .= 	'<td><a href="' . esc_url( admin_url( '?pmpropdf=' . $invoice->code ) ). '">' . pmpropdf_generate_invoice_name( $invoice->code ) .'</a></td>';
+				$content .= 	'<td><a href="' . esc_url( home_url( '?pmpropdf=' . $invoice->code ) ). '">' . pmpropdf_generate_invoice_name( $invoice->code ) .'</a></td>';
 				$content .= '</tr>';
 			}
 			
