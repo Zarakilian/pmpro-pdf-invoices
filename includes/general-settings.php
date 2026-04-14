@@ -550,6 +550,7 @@ function pmpro_pdf_invoice_settings_page() {
 						}
 						?>
 					</p>
+						<?php endif; ?>
 				</div>
 			</div>
 		</div><!-- .pmpropdf-tab-content -->
