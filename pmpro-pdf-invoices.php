@@ -1468,14 +1468,14 @@ add_action( 'after_plugin_row_pmpro-pdf-invoices/pmpro-pdf-invoices.php', 'pmpro
 /** Helper function to see if PDF license key is active */
 function pmpropdf_is_license_active(){
 	$license_key = trim( get_option( 'pmpro_pdf_invoice_license_key' ) );
-	$license_valid = false;
 
-	// license cache
-	$license_valid = get_transient( 'pmpro_pdf_invoice_license_valid' );
+	// License cache. Use string values ('yes'/'no') because get_transient()
+	// returns false both when the transient doesn't exist and when it stores false.
+	$cached = get_transient( 'pmpro_pdf_invoice_license_valid' );
 
-	// Return this if there is a transient already.
-	if ( $license_valid ) {
-		return $license_valid;
+	// Return cached result if the transient exists.
+	if ( false !== $cached ) {
+		return 'yes' === $cached;
 	}
 
 	// Check if it's still valid or not.
@@ -1486,7 +1486,7 @@ function pmpropdf_is_license_active(){
 	}
 
 	// Cache the license status for 1 week and check again to save our own resources.
-	set_transient( 'pmpro_pdf_invoice_license_valid', $license_valid, 7 * DAY_IN_SECONDS );
+	set_transient( 'pmpro_pdf_invoice_license_valid', $license_valid ? 'yes' : 'no', 7 * DAY_IN_SECONDS );
 
 	return $license_valid;
 }
