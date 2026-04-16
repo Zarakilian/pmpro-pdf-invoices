@@ -86,6 +86,62 @@
 	line-height: 1.6;
 }
 
+/* Progress bar -------------------------------------------------------------- */
+#pmpropdf_progress_bar {
+	width: 100%;
+	max-width: 400px;
+	height: 20px;
+	border-radius: 3px;
+	appearance: none;
+	-webkit-appearance: none;
+	border: 1px solid #c3c4c7;
+}
+
+#pmpropdf_progress_bar::-webkit-progress-bar {
+	background: #f6f7f7;
+	border-radius: 3px;
+}
+
+#pmpropdf_progress_bar::-webkit-progress-value {
+	background: #2271b1;
+	border-radius: 3px;
+	transition: width 0.2s ease;
+}
+
+#pmpropdf_progress_bar::-moz-progress-bar {
+	background: #2271b1;
+	border-radius: 3px;
+}
+
+/* Indeterminate animation */
+#pmpropdf_progress_bar.indeterminate {
+	background: #f6f7f7;
+	position: relative;
+	overflow: hidden;
+}
+
+#pmpropdf_progress_bar.indeterminate::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -40%;
+	width: 40%;
+	height: 100%;
+	background: linear-gradient(90deg, transparent, #2271b1, transparent);
+	animation: pmpropdf-indeterminate 1.5s infinite;
+}
+
+@keyframes pmpropdf-indeterminate {
+	0% { left: -40%; }
+	100% { left: 100%; }
+}
+
+#pmpropdf_progress_label {
+	font-size: 12px;
+	color: #50575e;
+	margin-top: 4px;
+}
+
 /* Logo holder --------------------------------------------------------------- */
 .logo_holder {
 	margin-bottom: 10px;
