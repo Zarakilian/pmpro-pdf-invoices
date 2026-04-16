@@ -2,10 +2,10 @@
 Contributors: andrewza, yoohooplugins
 Tags: pdf, pdf invoice, invoices
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4GC4JEZH7KSKL
-Requires at least: 5.2
-Tested up to: 6.7
+Requires at least: 6.0
+Tested up to: 6.9
 Requires PHP: 7.2
-Stable tag: 1.23
+Stable tag: 2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,9 +25,17 @@ Paid Memberships Pro PDF Invoices plugin will generate PDF Invoices for members 
 Yes the PDF templates are customizable and use general HTML code with custom tags to replace values in the template.
 
 == Changelog ==
-= TBD =
-* BUG FIX: Prevent errors when accessing billing details for orders without them (e.g., free signups).
-* BUG FIX: Resolve issue causing empty PDF downloads by reading files directly instead of via URL, improving compatibility (especially with Apache).
+= 2.0 - 2026-04-17 =
+* SECURITY: General minor security improvements around sanitization and verification checks.
+* ENHANCEMENT: Improved UI/UX overhaul to make settings easier to navigate and moved PDF Invoices option under "Memberships" admin menu.
+* ENHANCEMENT: Makes use of the PMPro Restricted File for secure file handling. Still supports the previous uploads folder for older PMPro versions. Automatically migrates on update to the new location.
+* ENHANCEMENT: Added date range filtering for admins to download PDF orders between a certain date range.
+* ENHANCEMENT: Added "Delete all PDFs" from the server functionality. 
+* ENHANCEMENT: Added "Regenerate All PDFs" option to rebuild all PDFs even if they already exist. This is helpful when changing your invoice template or business details.
+* BUG FIX: Fixed an issue where order billing information wasn't pulling in correctly.
+* BUG FIX: Fixed an issue where local environments would fail to download the PDFs or would download blank PDFs in certain cases.
+* BUG FIX: Fixed a licensing validation check issue that may have caused false positives in some cases.
+* BUG FIX: Fixed minor translation issues with strings.
 
 = 1.23 - 2024-11-06 =
 * ENHANCEMENT: Added more template variables, see documentation - https://yoohooplugins.com/documentation/getting-started-with-paid-memberships-pro-pdf-invoices/ (Thanks @GCalToolkit)
