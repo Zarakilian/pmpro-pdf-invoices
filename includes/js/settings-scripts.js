@@ -24,9 +24,9 @@ jQuery( function ( $ ) {
 
 		pmpropdf_js.batch_process = { total_count: 0, total_created: 0, total_skipped: 0, total_orders: 0 };
 
-		// Show progress bar immediately with indeterminate state.
+		// Show progress bar immediately.
 		$( '#pmpropdf_progress_wrap' ).show();
-		$( '#pmpropdf_progress_bar' ).removeAttr( 'value' ); // Indeterminate state
+		$( '#pmpropdf_progress_bar' ).addClass( 'indeterminate' ).prop( 'value', '' );
 		$( '#pmpropdf_progress_label' ).text( 'Starting...' );
 
 		$( '.missing_invoice_log' ).html( '<div class="item">' + ( force ? 'Regenerating all invoices&hellip;' : 'Generating missing invoices&hellip;' ) + '</div>' );
@@ -191,7 +191,7 @@ function pmpropdf_ajax_batch_loop( batch_size, batch_no, force ) {
 			if ( response.total_orders ) {
 				pmpropdf_js.batch_process.total_orders = response.total_orders;
 				// Exit indeterminate state and set initial value.
-				jQuery( '#pmpropdf_progress_bar' ).val( 0 );
+				jQuery( '#pmpropdf_progress_bar' ).removeClass( 'indeterminate' ).val( 0 );
 			}
 
 			pmpropdf_js.batch_process.total_count   += response.batch_count || 0;
