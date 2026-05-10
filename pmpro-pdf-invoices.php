@@ -50,6 +50,10 @@ include PMPRO_PDF_DIR . '/includes/template-editor.php';
 // Include license settings page.
 include PMPRO_PDF_DIR . '/includes/general-settings.php';
 
+// Include sequential invoice functionality
+include PMPRO_PDF_DIR . '/includes/sequential-invoices.php';
+include PMPRO_PDF_DIR . '/includes/sequential-settings.php';
+
 function pmpropdf_init() {
 
 	// Load text domain
