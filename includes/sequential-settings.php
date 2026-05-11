@@ -19,6 +19,7 @@ function pmpropdf_render_sequential_settings() {
 	// Get current values
 	$enabled = get_option( PMPRO_PDF_SEQUENTIAL_ENABLED, false );
 	$reset_yearly = get_option( PMPRO_PDF_SEQUENTIAL_RESET_YEARLY, false );
+	$include_year = get_option( PMPRO_PDF_SEQUENTIAL_INCLUDE_YEAR, false );
 	$prefix = get_option( PMPRO_PDF_SEQUENTIAL_PREFIX, 'INV-' );
 	$suffix = get_option( PMPRO_PDF_SEQUENTIAL_SUFFIX, '' );
 	$next_number = get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 );
@@ -106,9 +107,8 @@ function pmpropdf_render_sequential_settings() {
 						<p class="description">
 							<?php esc_html_e( 'Useful for annual sequences or compliance requirements.', 'pmpro-pdf-invoices' ); ?>
 						</p>
-					</td>
 				
-				<tr class="pmpropdf-sequential-options" <?php echo empty( $enabled ) ? 'style="display:none;"' : ''; ?>>
+				<tr class="pmpropdf-sequential-options pmpropdf-reset-yearly-option" <?php echo empty( $enabled ) || empty( $include_year ) ? 'style="display:none;"' : ''; ?>>
 					<th scope="row"><?php esc_html_e( 'Reset Yearly', 'pmpro-pdf-invoices' ); ?></th>
 					<td>
 						<label>
@@ -120,12 +120,10 @@ function pmpropdf_render_sequential_settings() {
 							<?php esc_html_e( 'Reset numbering to 1 at the start of each year', 'pmpro-pdf-invoices' ); ?>
 						</label>
 						<p class="description">
-							<?php esc_html_e( 'Required in some countries (e.g. EU VAT compliance) for invoice compliance. The year must be included in the number for this to work correctly.', 'pmpro-pdf-invoices' ); ?>
+							<?php esc_html_e( 'Only available when "Include Year" is enabled. Required for EU VAT compliance.', 'pmpro-pdf-invoices' ); ?>
 						</p>
 					</td>
 				</tr>
-				</tr>
-				
 				<tr class="pmpropdf-sequential-options pmpropdf-year-option" <?php echo empty( $enabled ) || empty( $include_year ) ? 'style="display:none;"' : ''; ?>>
 					<th scope="row"><?php esc_html_e( 'Year Placement', 'pmpro-pdf-invoices' ); ?></th>
 					<td>
@@ -244,6 +242,10 @@ function pmpropdf_render_sequential_settings() {
 		// Initialize
 		toggleSequentialOptions();
 	});
+		// Show/hide yearly reset option based on include year checkbox
+		$( '#pmpro_pdf_sequential_include_year' ).on( 'change', function() {
+			$( '.pmpropdf-reset-yearly-option' ).toggle( $( this ).is( ':checked' ) );
+		} );
 	</script>
 	<?php
 }
