@@ -20,6 +20,7 @@ if ( ! defined( 'PMPRO_PDF_SEQUENTIAL_ENABLED' ) ) {
 	define( 'PMPRO_PDF_SEQUENTIAL_NEXT', 'pmpro_pdf_sequential_next' );
 	define( 'PMPRO_PDF_SEQUENTIAL_PADDING', 'pmpro_pdf_sequential_padding' );
 	define( 'PMPRO_PDF_SEQUENTIAL_INCLUDE_YEAR', 'pmpro_pdf_sequential_include_year' );
+	define( 'PMPRO_PDF_SEQUENTIAL_RESET_YEARLY', 'pmpro_pdf_sequential_reset_yearly' );
 }
 
 /**
@@ -89,6 +90,16 @@ function pmpropdf_format_sequential_number( $number ) {
  * @return string The formatted sequential invoice number
  */
 function pmpropdf_get_next_sequential_number() {
+	// Check for yearly reset
+	$reset_yearly = get_option( PMPRO_PDF_SEQUENTIAL_RESET_YEARLY, false );
+	if ( $reset_yearly ) {
+		$last_year = get_option( 'pmpro_pdf_sequential_last_year', date( 'Y' ) );
+		$current_year = date( 'Y' );
+		if ( $last_year !== $current_year ) {
+			update_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 );
+			update_option( 'pmpro_pdf_sequential_last_year', $current_year );
+		}
+	}
 	// Get next number
 	$next_number = intval( get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 ) );
 	

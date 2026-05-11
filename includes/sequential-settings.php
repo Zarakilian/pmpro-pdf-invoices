@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) or exit;
 function pmpropdf_render_sequential_settings() {
 	// Get current values
 	$enabled = get_option( PMPRO_PDF_SEQUENTIAL_ENABLED, false );
+	$reset_yearly = get_option( PMPRO_PDF_SEQUENTIAL_RESET_YEARLY, false );
 	$prefix = get_option( PMPRO_PDF_SEQUENTIAL_PREFIX, 'INV-' );
 	$suffix = get_option( PMPRO_PDF_SEQUENTIAL_SUFFIX, '' );
 	$next_number = get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 );
@@ -106,6 +107,23 @@ function pmpropdf_render_sequential_settings() {
 							<?php esc_html_e( 'Useful for annual sequences or compliance requirements.', 'pmpro-pdf-invoices' ); ?>
 						</p>
 					</td>
+				
+				<tr class="pmpropdf-sequential-options" <?php echo empty( $enabled ) ? 'style="display:none;"' : ''; ?>>
+					<th scope="row"><?php esc_html_e( 'Reset Yearly', 'pmpro-pdf-invoices' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" 
+							       id="pmpro_pdf_sequential_reset_yearly"
+							       name="pmpro_pdf_sequential_reset_yearly" 
+							       value="1" 
+							       <?php checked( ! empty( $reset_yearly ) ); ?>>
+							<?php esc_html_e( 'Reset numbering to 1 at the start of each year', 'pmpro-pdf-invoices' ); ?>
+						</label>
+						<p class="description">
+							<?php esc_html_e( 'Required in some countries (e.g. EU VAT compliance) for invoice compliance. The year must be included in the number for this to work correctly.', 'pmpro-pdf-invoices' ); ?>
+						</p>
+					</td>
+				</tr>
 				</tr>
 				
 				<tr class="pmpropdf-sequential-options pmpropdf-year-option" <?php echo empty( $enabled ) || empty( $include_year ) ? 'style="display:none;"' : ''; ?>>
@@ -265,6 +283,8 @@ function pmpropdf_save_sequential_settings() {
 		// Include year
 		$include_year = ! empty( $_POST['pmpro_pdf_sequential_include_year'] );
 		update_option( PMPRO_PDF_SEQUENTIAL_INCLUDE_YEAR, $include_year );
+		$reset_yearly = ! empty( $_POST[pmpro_pdf_sequential_reset_yearly] );
+		update_option( PMPRO_PDF_SEQUENTIAL_RESET_YEARLY, $reset_yearly );
 		
 		// Year placement
 		$year_placement = ! empty( $_POST['pmpro_pdf_sequential_year_placement'] ) 
