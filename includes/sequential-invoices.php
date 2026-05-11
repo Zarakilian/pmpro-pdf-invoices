@@ -92,7 +92,8 @@ function pmpropdf_format_sequential_number( $number ) {
 function pmpropdf_get_next_sequential_number() {
 	// Check for yearly reset
 	$reset_yearly = get_option( PMPRO_PDF_SEQUENTIAL_RESET_YEARLY, false );
-	if ( $reset_yearly ) {
+	$include_year = get_option( PMPRO_PDF_SEQUENTIAL_INCLUDE_YEAR, false );
+	if ( $reset_yearly && $include_year ) {
 		$last_year = get_option( 'pmpro_pdf_sequential_last_year', date( 'Y' ) );
 		$current_year = date( 'Y' );
 		if ( $last_year !== $current_year ) {
