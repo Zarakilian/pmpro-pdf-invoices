@@ -183,9 +183,7 @@ function pmpro_pdf_invoice_settings_page() {
 		update_option( PMPRO_PDF_LOGO_URL, $logo_url );
 		update_option( PMPRO_PDF_ADMIN_EMAILS, ( ! empty( $_POST['admin_emails'] ) ? true : false ) );
 		pmpro_pdf_admin_notice( __( 'Settings saved.', 'pmpro-pdf-invoices' ), 'success is-dismissible' );
-		if ( function_exists( 'pmpropdf_save_sequential_settings' ) ) {
-			pmpropdf_save_sequential_settings();
-		}
+		pmpropdf_save_sequential_settings();
 	}
 
 	// -------------------------------------------------------------------------
@@ -453,13 +451,7 @@ function pmpro_pdf_invoice_settings_page() {
 						</table>
 					</div>
 				</div>
-
-				<?php
-				// Render sequential invoice settings
-				if ( function_exists( 'pmpropdf_render_sequential_settings' ) ) {
-					pmpropdf_render_sequential_settings();
-				}
-				?>
+				<?php pmpropdf_render_sequential_settings(); ?>
 
 				<?php submit_button( __( 'Save Settings', 'pmpro-pdf-invoices' ), 'primary', 'pmpropdf_save_settings' ); ?>
 			</form>
