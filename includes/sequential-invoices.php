@@ -3,8 +3,8 @@
  * Sequential Invoice Numbers for PMPro PDF Invoices
  * 
  * This file adds sequential invoice numbering functionality to the plugin.
- * When enabled, invoices display formatted sequential numbers (e.g., INV-0001)
- * instead of PMPro's random order codes.
+ * When enabled, PMPro order codes are replaced with sequential numbers 
+ * (e.g., INV-0001) at order creation time.
  * 
  * @since 2.1
  */
@@ -20,7 +20,6 @@ if ( ! defined( 'PMPRO_PDF_SEQUENTIAL_ENABLED' ) ) {
 	define( 'PMPRO_PDF_SEQUENTIAL_NEXT', 'pmpro_pdf_sequential_next' );
 	define( 'PMPRO_PDF_SEQUENTIAL_PADDING', 'pmpro_pdf_sequential_padding' );
 	define( 'PMPRO_PDF_SEQUENTIAL_INCLUDE_YEAR', 'pmpro_pdf_sequential_include_year' );
-	define( 'PMPRO_PDF_SEQUENTIAL_MAP_META_KEY', '_pmpro_sequential_invoice_number' );
 }
 
 /**
@@ -82,108 +81,19 @@ function pmpropdf_format_sequential_number( $number ) {
 }
 
 /**
- * Get sequential invoice number for an existing order
- * 
- * @since 2.1
- * @param string $order_code The PMPro order code
- * @return string|null The sequential number or null if not assigned
- */
-function pmpropdf_get_order_sequential_number( $order_code ) {
-	global $wpdb;
-	
-	// Try to get from order meta
-	$meta_table = $wpdb->pmpro_membership_ordermeta;
-	
-	if ( ! $meta_table ) {
-		// Fallback: check if table exists
-		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}pmpro_membership_ordermeta'" );
-		if ( ! $table_exists ) {
-			return null;
-		}
-		$meta_table = $wpdb->prefix . 'pmpro_membership_ordermeta';
-	}
-	
-	return $wpdb->get_var( $wpdb->prepare(
-		"SELECT meta_value FROM {$meta_table} 
-		 WHERE pmpro_membership_order_id = (
-		   SELECT id FROM {$wpdb->pmpro_membership_orders} WHERE code = %s
-		 ) 
-		 AND meta_key = %s",
-		$order_code,
-		PMPRO_PDF_SEQUENTIAL_MAP_META_KEY
-	) );
-}
-
-/**
- * Store sequential invoice number for an order
- * 
- * @since 2.1
- * @param int $order_id The PMPro order ID
- * @param string $sequential_number The sequential invoice number
- * @return bool
- */
-function pmpropdf_store_order_sequential_number( $order_id, $sequential_number ) {
-	global $wpdb;
-	
-	// Check if add_pmpro_membership_order_meta exists (PMPro 2.6+)
-	if ( function_exists( 'add_pmpro_membership_order_meta' ) ) {
-		return add_pmpro_membership_order_meta( $order_id, PMPRO_PDF_SEQUENTIAL_MAP_META_KEY, $sequential_number );
-	}
-	
-	// Fallback: direct insert
-	$meta_table = $wpdb->prefix . 'pmpro_membership_ordermeta';
-	
-	// Check if already exists
-	$exists = $wpdb->get_var( $wpdb->prepare(
-		"SELECT meta_id FROM {$meta_table} WHERE pmpro_membership_order_id = %d AND meta_key = %s",
-		$order_id,
-		PMPRO_PDF_SEQUENTIAL_MAP_META_KEY
-	) );
-	
-	if ( $exists ) {
-		return $wpdb->update(
-			$meta_table,
-			array( 'meta_value' => $sequential_number ),
-			array( 'pmpro_membership_order_id' => $order_id, 'meta_key' => PMPRO_PDF_SEQUENTIAL_MAP_META_KEY ),
-			array( '%s' ),
-			array( '%d', '%s' )
-		);
-	}
-	
-	return $wpdb->insert(
-		$meta_table,
-		array(
-			'pmpro_membership_order_id' => $order_id,
-			'meta_key' => PMPRO_PDF_SEQUENTIAL_MAP_META_KEY,
-			'meta_value' => $sequential_number
-		),
-		array( '%d', '%s', '%s' )
-	);
-}
-
-/**
  * Get the next sequential invoice number and increment the counter
  * 
  * Uses WordPress transients for simple locking to prevent race conditions.
  * 
  * @since 2.1
- * @param string $order_code The PMPro order code
  * @return string The formatted sequential invoice number
  */
-function pmpropdf_get_next_sequential_number( $order_code ) {
-	global $wpdb;
-	
-	// Check if this order already has a sequential number assigned
-	$existing = pmpropdf_get_order_sequential_number( $order_code );
-	if ( ! empty( $existing ) ) {
-		return $existing;
-	}
-	
+function pmpropdf_get_next_sequential_number() {
 	// Get next number
 	$next_number = intval( get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 ) );
 	
 	// Use WordPress transient for simple locking (10 second lock)
-	$lock_key = 'pmpropdf_seq_lock_' . md5( $order_code );
+	$lock_key = 'pmpropdf_seq_lock_' . uniqid();
 	$lock_acquired = false;
 	$max_attempts = 10;
 	
@@ -197,8 +107,8 @@ function pmpropdf_get_next_sequential_number( $order_code ) {
 	}
 	
 	if ( ! $lock_acquired ) {
-		// Log lock failure and proceed anyway (with incremented number to avoid duplicates)
-		error_log( "PMPro PDF: Sequential number lock failed for order {$order_code}" );
+		// Log lock failure
+		error_log( "PMPro PDF: Sequential number lock failed, proceeding anyway" );
 	}
 	
 	// Double-check after acquiring lock
@@ -212,128 +122,75 @@ function pmpropdf_get_next_sequential_number( $order_code ) {
 		delete_transient( $lock_key );
 	}
 	
-	// Format the number
-	$formatted_number = pmpropdf_format_sequential_number( $next_number );
-	
-	// Get order ID and store the mapping
-	$order_id = $wpdb->get_var( $wpdb->prepare(
-		"SELECT id FROM {$wpdb->pmpro_membership_orders} WHERE code = %s",
-		$order_code
-	) );
-	
-	if ( $order_id ) {
-		pmpropdf_store_order_sequential_number( $order_id, $formatted_number );
-	}
-	
-	/**
-	 * Fires after a sequential invoice number is assigned
-	 * 
-	 * @since 2.1
-	 * @param string $order_code The PMPro order code
-	 * @param string $formatted_number The formatted sequential number
-	 * @param int $next_number The raw sequential number
-	 */
-	do_action( 'pmpropdf_sequential_number_assigned', $order_code, $formatted_number, $next_number );
-	
-	return $formatted_number;
+	// Format and return
+	return pmpropdf_format_sequential_number( $next_number );
 }
 
 /**
- * Assign sequential number when an order is added
+ * Override PMPro order code with sequential invoice number
+ * 
+ * This filter hooks into pmpro_random_code to replace PMPro's random
+ * order codes with sequential invoice numbers when enabled.
  * 
  * @since 2.1
- * @param MemberOrder $order The PMPro order object
+ * @param string $code The original random code from PMPro
+ * @return string The sequential invoice number or original code
  */
-function pmpropdf_assign_sequential_number_on_order( $order ) {
+function pmpropdf_override_order_code( $code ) {
+	// Only override if sequential numbers are enabled
 	if ( ! pmpropdf_sequential_enabled() ) {
-		return;
+		return $code;
 	}
 	
-	// Check if already assigned
-	$existing = pmpropdf_get_order_sequential_number( $order->code );
-	if ( ! empty( $existing ) ) {
-		return;
-	}
+	// Get the next sequential number
+	$sequential_code = pmpropdf_get_next_sequential_number();
 	
-	// Assign the sequential number
-	pmpropdf_get_next_sequential_number( $order->code );
+	/**
+	 * Fires when a sequential invoice number is assigned
+	 * 
+	 * @since 2.1
+	 * @param string $sequential_code The sequential invoice number
+	 */
+	do_action( 'pmpropdf_sequential_number_assigned', $sequential_code );
+	
+	return $sequential_code;
 }
-// Hook early (priority 5) before PDF generation
-add_action( 'pmpro_added_order', 'pmpropdf_assign_sequential_number_on_order', 5 );
+// Hook into PMPro's random code filter
+add_filter( 'pmpro_random_code', 'pmpropdf_override_order_code', 10, 1 );
 
 /**
- * Add sequential invoice number to template replacements
+ * Add sequential invoice number template variable (for backwards compatibility)
  * 
- * This filter adds {{sequential_invoice_number}} to the available template variables.
- * When sequential numbers are disabled, it falls back to the order code.
+ * When sequential numbers are enabled, this just returns the order code.
+ * When disabled, it also returns the order code (for template compatibility).
  * 
  * @since 2.1
  * @param array $replacements The template variable replacements
  * @param object $order_data The order data object
  * @return array Modified replacements array
  */
-function pmpropdf_add_sequential_replacement( $replacements, $order_data ) {
-	if ( ! pmpropdf_sequential_enabled() ) {
-		// When disabled, use the regular order code
-		$replacements['{{sequential_invoice_number}}'] = $order_data->code ?: '';
-		return $replacements;
-	}
-	
-	// Get existing sequential number for this order
-	$sequential_number = pmpropdf_get_order_sequential_number( $order_data->code );
-	
-	// If not yet assigned (legacy orders), generate it now
-	if ( empty( $sequential_number ) ) {
-		$sequential_number = pmpropdf_get_next_sequential_number( $order_data->code );
-	}
-	
-	$replacements['{{sequential_invoice_number}}'] = $sequential_number;
+function pmpropdf_add_sequential_template_replacement( $replacements, $order_data ) {
+	// {{sequential_invoice_number}} always shows the order code
+	// (which is now the sequential number when enabled)
+	$replacements['{{sequential_invoice_number}}'] = $order_data->code ?: '';
 	
 	return $replacements;
 }
 add_filter( 'pmpro_pdf_invoice_custom_variables', 'pmpropdf_add_sequential_template_replacement', 10, 2 );
 
 /**
- * Optionally replace {{invoice_code}} with sequential number
+ * Migration tool: Reassign sequential numbers to existing orders
  * 
- * @since 2.1
- * @param array $replacements The template variable replacements
- * @param object $order_data The order data object
- * @return array Modified replacements array
- */
-function pmpropdf_maybe_replace_invoice_code( $replacements, $order_data ) {
-	// Check if we should replace {{invoice_code}} with sequential number
-	$replace_invoice_code = apply_filters( 
-		'pmpropdf_sequential_replace_invoice_code', 
-		get_option( 'pmpro_pdf_sequential_replace_invoice_code', false ) 
-	);
-	
-	if ( ! $replace_invoice_code || ! pmpropdf_sequential_enabled() ) {
-		return $replacements;
-	}
-	
-	// Get the sequential number
-	$sequential_number = pmpropdf_get_order_sequential_number( $order_data->code );
-	
-	if ( empty( $sequential_number ) ) {
-		$sequential_number = pmpropdf_get_next_sequential_number( $order_data->code );
-	}
-	
-	// Override {{invoice_code}} with the sequential number
-	$replacements['{{invoice_code}}'] = $sequential_number;
-	
-	return $replacements;
-}
-add_filter( 'pmpro_pdf_invoice_custom_variables', 'pmpropdf_maybe_replace_invoice_code', 15, 2 );
-
-/**
- * Migration tool: Assign sequential numbers to existing orders
+ * WARNING: This will change order codes in the database. Use with caution.
+ * This is mainly useful for sites that want to apply sequential numbers
+ * to historical orders after enabling the feature.
  * 
  * @since 2.1
  * @param int $batch_size Number of orders to process per batch
- * @return array Stats array with 'processed', 'skipped', 'errors'
+ * @param bool $dry_run If true, returns what would happen without making changes
+ * @return array Stats array with 'processed', 'skipped', 'errors', 'preview'
  */
-function pmpropdf_migrate_existing_orders_to_sequential( $batch_size = 100 ) {
+function pmpropdf_migrate_existing_orders_to_sequential( $batch_size = 100, $dry_run = false ) {
 	global $wpdb;
 	
 	if ( ! pmpropdf_sequential_enabled() ) {
@@ -343,35 +200,63 @@ function pmpropdf_migrate_existing_orders_to_sequential( $batch_size = 100 ) {
 	$stats = array(
 		'processed' => 0,
 		'skipped' => 0,
-		'errors' => 0
+		'errors' => 0,
+		'preview' => array()
 	);
 	
-	// Get orders without sequential numbers
-	$orders = $wpdb->get_results(
-		"SELECT o.id, o.code 
-		 FROM {$wpdb->pmpro_membership_orders} o
-		 LEFT JOIN {$wpdb->prefix}pmpro_membership_ordermeta om 
-		    ON o.id = om.pmpro_membership_order_id 
-		    AND om.meta_key = %s
-		 WHERE om.meta_id IS NULL
-		 ORDER BY o.id ASC
+	// Get orders that look like random codes (not already sequential)
+	// Sequential codes typically start with a prefix like "INV-"
+	$prefix = get_option( PMPRO_PDF_SEQUENTIAL_PREFIX, 'INV-' );
+	
+	$orders = $wpdb->get_results( $wpdb->prepare(
+		"SELECT id, code, user_id, timestamp 
+		 FROM {$wpdb->pmpro_membership_orders}
+		 WHERE code NOT LIKE %s
+		 ORDER BY timestamp ASC
 		 LIMIT %d",
-		PMPRO_PDF_SEQUENTIAL_MAP_META_KEY,
+		$prefix . '%',
 		$batch_size
-	);
+	) );
 	
 	if ( empty( $orders ) ) {
 		return $stats;
 	}
 	
 	foreach ( $orders as $order ) {
-		try {
-			pmpropdf_get_next_sequential_number( $order->code );
+		$new_code = pmpropdf_format_sequential_number( 
+			intval( get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 ) ) + $stats['processed']
+		);
+		
+		if ( $dry_run ) {
+			$stats['preview'][] = array(
+				'id' => $order->id,
+				'old_code' => $order->code,
+				'new_code' => $new_code
+			);
 			$stats['processed']++;
-		} catch ( Exception $e ) {
-			$stats['errors']++;
-			error_log( "PMPro PDF Sequential Migration Error for order {$order->code}: " . $e->getMessage() );
+			continue;
 		}
+		
+		// Update the order code
+		$updated = $wpdb->update(
+			$wpdb->pmpro_membership_orders,
+			array( 'code' => $new_code ),
+			array( 'id' => $order->id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+		
+		if ( $updated ) {
+			$stats['processed']++;
+		} else {
+			$stats['errors']++;
+		}
+	}
+	
+	// Update the next number counter
+	if ( ! $dry_run && $stats['processed'] > 0 ) {
+		$current_next = intval( get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 ) );
+		update_option( PMPRO_PDF_SEQUENTIAL_NEXT, $current_next + $stats['processed'] );
 	}
 	
 	return $stats;
@@ -395,7 +280,9 @@ function pmpropdf_ajax_migrate_sequential() {
 	}
 	
 	$batch_size = isset( $_POST['batch_size'] ) ? intval( $_POST['batch_size'] ) : 50;
-	$stats = pmpropdf_migrate_existing_orders_to_sequential( $batch_size );
+	$dry_run = isset( $_POST['dry_run'] ) && $_POST['dry_run'];
+	
+	$stats = pmpropdf_migrate_existing_orders_to_sequential( $batch_size, $dry_run );
 	
 	wp_send_json_success( $stats );
 }
