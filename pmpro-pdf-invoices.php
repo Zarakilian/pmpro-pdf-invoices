@@ -309,17 +309,29 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 	$logo_image = !empty($logo_url) ? "<img style='max-width:300px;' src='$logo_url' />" : '';
 
 
-	$member_first_name = isset( $user->first_name ) ? sanitize_text_field( $user->first_name ) : '';
-	$member_last_name = isset( $user->last_name ) ? sanitize_text_field( $user->last_name ) : '';
+	// Safe checks for user properties to prevent PHP 8+ fatal errors
+	if ( ! empty( $user ) && ! is_wp_error( $user ) ) {
+		$member_first_name = isset( $user->first_name ) ? sanitize_text_field( $user->first_name ) : '';
+		$member_last_name = isset( $user->last_name ) ? sanitize_text_field( $user->last_name ) : '';
+		$user_email = isset( $user->data->user_email ) ? $user->data->user_email : '';
+		$display_name = isset( $user->data->display_name ) ? $user->data->display_name : '';
+		$membership_enddate = pmpro_get_membership_expiration_text( $order_level, $user->ID ) ?: '';
+	} else {
+		$member_first_name = '';
+		$member_last_name = '';
+		$user_email = '';
+		$display_name = '';
+		$membership_enddate = '';
+	}
 
 	// Items to replace.
 	$replacements = array(
 		'{{invoice_code}}' => $order_data->code ?: '',
-		'{{user_email}}' => $user->data->user_email ?: '',
+		'{{user_email}}' => $user_email ?: '',
 		'{{membership_level}}' => $order_level_name ?: '',
-		'{{membership_enddate}}' => pmpro_get_membership_expiration_text( $order_level, $user->ID ) ?: '',
-		'{{membership_description}}' => $order_level->description ?: '',
-		'{{membership_level_confirmation_message}}' => $order_level->confirmation ?: '',
+		'{{membership_enddate}}' => $membership_enddate ?: '',
+		'{{membership_description}}' => ! empty( $order_level ) && isset( $order_level->description ) ? $order_level->description : '',
+		'{{membership_level_confirmation_message}}' => ! empty( $order_level ) && isset( $order_level->confirmation ) ? $order_level->confirmation : '',
 		'{{payment_method}}' => $payment_method ?: '',
 		'{{total}}' => pmpro_formatPrice($order_data->total) ?: '',
 		'{{site}}' => get_bloginfo( 'sitename' ) ?: '',
@@ -331,7 +343,7 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		'{{invoice_date}}' => $date ?: '',
 		'{{logo_image}}' => $logo_image ?: '',
 		'{{admin_email}}' => get_bloginfo( 'admin_email' ),
-		'{{display_name}}' => $user->data->display_name ?: '',
+		'{{display_name}}' => $display_name ?: '',
 		'{{levels_url}}' => pmpro_url( 'levels' ) ?: '',
 		'{{billing_address}}' => wp_kses_post( $billing_details ) ?: '', // The formatted billing address.
 		'{{billing_name}}' => isset( $order->billing->name ) ? sanitize_text_field( $order->billing->name ) : ( isset( $order_data->billing->name ) ? sanitize_text_field( $order_data->billing->name ) : '' ),
@@ -344,7 +356,7 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		'{{billing_phone}}' => isset( $order->billing->phone ) ? sanitize_text_field( $order->billing->phone ) : ( isset( $order_data->billing->phone ) ? sanitize_text_field( $order_data->billing->phone ) : '' ),
 		'{{order_link}}' => pmpro_login_url( pmpro_url( 'invoice', '?invoice=' . $order_data->code ) ),
 		'{{order_url}}' => pmpro_login_url( pmpro_url( 'invoice', '?invoice=' . $order_data->code ) ),
-		'{{name}}' => $user->data->display_name ?: '',
+		'{{name}}' => $display_name ?: '',
 		'{{first_name}}' => $member_first_name,
 		'{{last_name}}' => $member_last_name,
 		'{{full_name}}' => trim( $member_first_name . ' ' . $member_last_name ),
