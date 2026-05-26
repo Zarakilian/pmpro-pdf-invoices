@@ -297,6 +297,7 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		$payment_method = apply_filters( 'pmpro_pdf_gateway_string', __( 'Free', 'pmpro-pdf-invoices' ) );
 	}
 
+	$order_level = null;
 	$order_level_name = '';
 	if(function_exists('pmpro_getLevel')){
 		$order_level = pmpro_getLevel($order_data->membership_id);
@@ -315,7 +316,7 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 		$member_last_name = isset( $user->last_name ) ? sanitize_text_field( $user->last_name ) : '';
 		$user_email = isset( $user->data->user_email ) ? $user->data->user_email : '';
 		$display_name = isset( $user->data->display_name ) ? $user->data->display_name : '';
-		$membership_enddate = pmpro_get_membership_expiration_text( $order_level, $user->ID ) ?: '';
+		$membership_enddate = function_exists( 'pmpro_get_membership_expiration_text' ) ? ( pmpro_get_membership_expiration_text( $order_level, $user->ID ) ?: '' ) : '';
 	} else {
 		$member_first_name = '';
 		$member_last_name = '';
@@ -363,8 +364,13 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 	);
 
 
-	//Additional replacements - Developer hook to add custom variable parse
-	//Should use key-value pair array (assoc)
+	/**
+	 * Filter replacements for PDF generation.
+	 * 
+	 * @param array $replacements Key-value replacement tokens.
+	 * @param WP_User|false $user The user object or false if not found.
+	 * @param object $order_data The raw order database row.
+	 */
 	$replacements = apply_filters('pmpro_pdf_invoice_custom_variables', $replacements, $user, $order_data );
 
 	// Setup PDF Structure
