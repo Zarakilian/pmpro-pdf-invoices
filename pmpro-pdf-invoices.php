@@ -310,7 +310,7 @@ function pmpropdf_generate_pdf($order_data, $return_dom_pdf = false){
 	$logo_image = !empty($logo_url) ? "<img style='max-width:300px;' src='$logo_url' />" : '';
 
 
-	// Safe checks for user properties to prevent PHP 8+ fatal errors
+	// Prevent warnings and invalid property access on PHP 8+ when the user object is not loaded
 	if ( ! empty( $user ) && ! is_wp_error( $user ) ) {
 		$member_first_name = isset( $user->first_name ) ? sanitize_text_field( $user->first_name ) : '';
 		$member_last_name = isset( $user->last_name ) ? sanitize_text_field( $user->last_name ) : '';
