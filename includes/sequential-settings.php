@@ -24,7 +24,6 @@ function pmpropdf_render_sequential_settings() {
 	$suffix = get_option( PMPRO_PDF_SEQUENTIAL_SUFFIX, '' );
 	$next_number = get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 );
 	$padding = get_option( PMPRO_PDF_SEQUENTIAL_PADDING, 4 );
-	$include_year = get_option( PMPRO_PDF_SEQUENTIAL_INCLUDE_YEAR, false );
 	$year_placement = get_option( 'pmpro_pdf_sequential_year_placement', 'after_prefix' );
 	$replace_invoice_code = get_option( 'pmpro_pdf_sequential_replace_invoice_code', false );
 	?>
@@ -107,7 +106,9 @@ function pmpropdf_render_sequential_settings() {
 						<p class="description">
 							<?php esc_html_e( 'Useful for annual sequences or compliance requirements.', 'pmpro-pdf-invoices' ); ?>
 						</p>
-				
+			</td>
+		</tr>
+
 				<tr class="pmpropdf-sequential-options pmpropdf-reset-yearly-option" <?php echo empty( $enabled ) || empty( $include_year ) ? 'style="display:none;"' : ''; ?>>
 					<th scope="row"><?php esc_html_e( 'Reset Yearly', 'pmpro-pdf-invoices' ); ?></th>
 					<td>
@@ -243,9 +244,6 @@ function pmpropdf_render_sequential_settings() {
 		toggleSequentialOptions();
 	});
 		// Show/hide yearly reset option based on include year checkbox
-		$( '#pmpro_pdf_sequential_include_year' ).on( 'change', function() {
-			$( '.pmpropdf-reset-yearly-option' ).toggle( $( this ).is( ':checked' ) );
-		} );
 	</script>
 	<?php
 }
@@ -259,6 +257,10 @@ function pmpropdf_render_sequential_settings() {
  */
 function pmpropdf_save_sequential_settings() {
 	// Enable/disable
+	// Verify nonce
+	if ( ! isset( $_POST['pmpropdf_settings_nonce'] ) || ! wp_verify_nonce( $_POST['pmpropdf_settings_nonce'], 'pmpropdf_save_settings' ) ) {
+		return;
+	}
 	$enabled = ! empty( $_POST['pmpro_pdf_sequential_enabled'] );
 	update_option( PMPRO_PDF_SEQUENTIAL_ENABLED, $enabled );
 	
@@ -285,7 +287,7 @@ function pmpropdf_save_sequential_settings() {
 		// Include year
 		$include_year = ! empty( $_POST['pmpro_pdf_sequential_include_year'] );
 		update_option( PMPRO_PDF_SEQUENTIAL_INCLUDE_YEAR, $include_year );
-		$reset_yearly = ! empty( $_POST[pmpro_pdf_sequential_reset_yearly] );
+		$reset_yearly = ! empty( $_POST['pmpro_pdf_sequential_reset_yearly'] );
 		update_option( PMPRO_PDF_SEQUENTIAL_RESET_YEARLY, $reset_yearly );
 		
 		// Year placement

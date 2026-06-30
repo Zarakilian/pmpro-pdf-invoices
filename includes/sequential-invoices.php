@@ -105,7 +105,7 @@ function pmpropdf_get_next_sequential_number() {
 	$next_number = intval( get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 ) );
 	
 	// Use WordPress transient for simple locking (10 second lock)
-	$lock_key = 'pmpropdf_seq_lock_' . uniqid();
+	$lock_key = 'pmpropdf_seq_lock';
 	$lock_acquired = false;
 	$max_attempts = 10;
 	
