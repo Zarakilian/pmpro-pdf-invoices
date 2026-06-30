@@ -867,12 +867,12 @@ function pmpropdf_download_list_shortcode_handler(){
 
 			if ( file_exists( pmpropdf_get_invoice_directory_or_url() . pmpropdf_generate_invoice_name($invoice->code) ) ){
 				$content .= '<tr>';
-				$content .=		'<td><a href="' . esc_url( pmpro_url( "invoice", "?invoice=" . $invoice->code ) ) . '">' . date_i18n(get_option("date_format"), $invoice->timestamp) . '</a></td>';
-				$content .=		'<td>' . $membership_level . '</td>';
-				$content .=		'<td>' . pmpro_formatPrice($invoice->total) . '</td>';
+				$content .=		'<td data-title="' . esc_attr__( 'Date', 'pmpro-pdf-invoices' ) . '"><a href="' . esc_url( pmpro_url( "invoice", "?invoice=" . $invoice->code ) ) . '">' . date_i18n(get_option("date_format"), $invoice->timestamp) . '</a></td>';
+				$content .=		'<td data-title="' . esc_attr__( 'Level', 'pmpro-pdf-invoices' ) . '">' . $membership_level . '</td>';
+				$content .=		'<td data-title="' . esc_attr__( 'Total', 'pmpro-pdf-invoices' ) . '">' . pmpro_formatPrice($invoice->total) . '</td>';
 				$content .= '<td class="' . esc_attr( pmpro_get_element_class( 'pmpro_table_order-status' ) ) . '" data-title="' . esc_attr__( 'Status', 'pmpro-pdf-invoices' ) . '">';
 				$content .= '<span class="' . esc_attr( pmpro_get_element_class( 'pmpro_tag pmpro_tag-' . $tag_style ) ) . '">' . esc_html( $display_status ) . '</span></td>';
-				$content .= 	'<td><a href="' . esc_url( home_url( '?pmpropdf=' . $invoice->code ) ). '">' . pmpropdf_generate_invoice_name( $invoice->code ) .'</a></td>';
+				$content .= 	'<td data-title="' . esc_attr__( 'Download', 'pmpro-pdf-invoices' ) . '"><a href="' . esc_url( home_url( '?pmpropdf=' . $invoice->code ) ). '">' . pmpropdf_generate_invoice_name( $invoice->code ) .'</a></td>';
 				$content .= '</tr>';
 			}
 			
@@ -884,7 +884,7 @@ function pmpropdf_download_list_shortcode_handler(){
 		?>
 		<div class="pmpro">
 			<section id="pmpro_account-pdfs" class="pmpro_section">
-				<h2 class="pmpro_section_title pmpro_font-x-large"><?php esc_html_e( 'Invoice History', 'pmpro-pdf-invoices' ); ?></h3>
+				<h2 class="pmpro_section_title pmpro_font-x-large"><?php esc_html_e( 'Invoice History', 'pmpro-pdf-invoices' ); ?></h2>
 				<div class="pmpro_card">
 					<div class="pmpro_card_content">
 						<table class="pmpro_table pmpro_table_orders">
