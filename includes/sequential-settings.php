@@ -22,10 +22,15 @@ function pmpropdf_render_sequential_settings() {
 	$include_year = get_option( PMPRO_PDF_SEQUENTIAL_INCLUDE_YEAR, false );
 	$prefix = get_option( PMPRO_PDF_SEQUENTIAL_PREFIX, 'INV-' );
 	$suffix = get_option( PMPRO_PDF_SEQUENTIAL_SUFFIX, '' );
-	$next_number = get_option( PMPRO_PDF_SEQUENTIAL_NEXT, 1 );
 	$padding = get_option( PMPRO_PDF_SEQUENTIAL_PADDING, 4 );
 	$year_placement = get_option( 'pmpro_pdf_sequential_year_placement', 'after_prefix' );
 	$replace_invoice_code = get_option( 'pmpro_pdf_sequential_replace_invoice_code', false );
+
+	// The next number is derived from the real next order ID, not stored directly,
+	// so numbers can never drift out of sync with actual saved orders.
+	global $wpdb;
+	$next_order_id = intval( $wpdb->get_var( "SELECT MAX(id) FROM $wpdb->pmpro_membership_orders" ) ) + 1;
+	$next_number = pmpropdf_get_sequential_number_for_order( $next_order_id, false );
 	?>
 	
 	<div class="postbox pmpropdf-section">
@@ -142,14 +147,14 @@ function pmpropdf_render_sequential_settings() {
 				<tr class="pmpropdf-sequential-options" <?php echo empty( $enabled ) ? 'style="display:none;"' : ''; ?>>
 					<th scope="row"><?php esc_html_e( 'Next Invoice Number', 'pmpro-pdf-invoices' ); ?></th>
 					<td>
-						<input type="number" 
-						       name="pmpro_pdf_sequential_next" 
+						<input type="number"
+						       name="pmpro_pdf_sequential_next"
 						       id="pmpro_pdf_sequential_next"
-						       value="<?php echo esc_attr( $next_number ); ?>" 
-						       min="1" 
+						       value="<?php echo esc_attr( $next_number ); ?>"
+						       min="1"
 						       class="small-text">
 						<p class="description">
-							<?php esc_html_e( 'The next invoice will use this number. Change with caution — gaps may occur if you skip numbers.', 'pmpro-pdf-invoices' ); ?>
+							<?php esc_html_e( 'The next real order saved will use this number. This is only a starting point — the number is derived from the order\'s actual ID when it is saved, so it can never drift out of sync with real orders (unlike a manually incremented counter).', 'pmpro-pdf-invoices' ); ?>
 						</p>
 					</td>
 				</tr>
@@ -296,12 +301,29 @@ function pmpropdf_save_sequential_settings() {
 			: 'after_prefix';
 		update_option( 'pmpro_pdf_sequential_year_placement', $year_placement );
 		
-		// Next number (must be >= 1)
-		$next_number = ! empty( $_POST['pmpro_pdf_sequential_next'] ) 
-			? intval( $_POST['pmpro_pdf_sequential_next'] ) 
-			: 1;
-		$next_number = max( 1, $next_number );
-		update_option( PMPRO_PDF_SEQUENTIAL_NEXT, $next_number );
+		// Next number is only a starting point for the offset the number is
+		// derived from — only touch the offset if the admin actually changed
+		// it from the currently-computed value, so real orders that already
+		// have numbers assigned are never disturbed.
+		if ( isset( $_POST['pmpro_pdf_sequential_next'] ) && $_POST['pmpro_pdf_sequential_next'] !== '' ) {
+			global $wpdb;
+			$desired_next  = max( 1, intval( $_POST['pmpro_pdf_sequential_next'] ) );
+			$next_order_id = intval( $wpdb->get_var( "SELECT MAX(id) FROM $wpdb->pmpro_membership_orders" ) ) + 1;
+			$current_next  = pmpropdf_get_sequential_number_for_order( $next_order_id, false );
+
+			if ( $desired_next !== $current_next ) {
+				if ( $include_year && $reset_yearly ) {
+					$offsets = get_option( PMPRO_PDF_SEQUENTIAL_YEAR_OFFSETS, array() );
+					if ( ! is_array( $offsets ) ) {
+						$offsets = array();
+					}
+					$offsets[ date( 'Y' ) ] = $next_order_id - $desired_next;
+					update_option( PMPRO_PDF_SEQUENTIAL_YEAR_OFFSETS, $offsets );
+				} else {
+					update_option( PMPRO_PDF_SEQUENTIAL_OFFSET, $next_order_id - $desired_next );
+				}
+			}
+		}
 		
 		// Replace invoice_code option
 		$replace_invoice_code = ! empty( $_POST['pmpro_pdf_sequential_replace_invoice_code'] );
