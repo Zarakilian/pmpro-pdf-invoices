@@ -25,6 +25,10 @@ Paid Memberships Pro PDF Invoices plugin will generate PDF Invoices for members 
 Yes the PDF templates are customizable and use general HTML code with custom tags to replace values in the template.
 
 == Changelog ==
+= 2.1 - 2026-07-07 =
+* ENHANCEMENT: Added functionality for sequential invoice codes, prefix and suffix as well as  resetting invoice numbers per year.
+* BUG FIX: Fixed an issue where the license key validation would show "expired" for active licenses.
+
 = 2.0 - 2026-04-17 =
 * SECURITY: General minor security improvements around sanitization and verification checks.
 * ENHANCEMENT: Improved UI/UX overhaul to make settings easier to navigate and moved PDF Invoices option under "Memberships" admin menu.
