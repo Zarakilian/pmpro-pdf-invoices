@@ -2,14 +2,14 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Paid Memberships Pro - PDF Invoices 1.23\n"
+"Project-Id-Version: Paid Memberships Pro - PDF Invoices 2.1\n"
 "Report-Msgid-Bugs-To: support@yoohooplugins.com\n"
 "Last-Translator: Yoohoo Plugins <support@yoohooplugins.com>\n"
 "Language-Team: Yoohoo Plugins <support@yoohooplugins.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-04-15T21:22:46+00:00\n"
+"POT-Creation-Date: 2026-07-07T19:42:32+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: pmpro-pdf-invoices\n"
@@ -60,7 +60,7 @@ msgid "You do not have permission to perform this action."
 msgstr ""
 
 #: includes/general-settings.php:43
-#: pmpro-pdf-invoices.php:1016
+#: pmpro-pdf-invoices.php:1020
 msgid "Security check failed."
 msgstr ""
 
@@ -107,531 +107,643 @@ msgstr ""
 msgid "Settings saved."
 msgstr ""
 
-#: includes/general-settings.php:200
+#: includes/general-settings.php:201
 msgid "Shortcodes added to the Account Page."
 msgstr ""
 
-#: includes/general-settings.php:233
-#: pmpro-pdf-invoices.php:138
+#: includes/general-settings.php:234
+#: pmpro-pdf-invoices.php:142
 msgid "PMPro PDF Invoices"
 msgstr ""
 
-#: includes/general-settings.php:235
+#: includes/general-settings.php:236
 msgid "Secondary menu"
 msgstr ""
 
-#: includes/general-settings.php:238
+#: includes/general-settings.php:239
 msgid "Tools"
 msgstr ""
 
-#: includes/general-settings.php:242
+#: includes/general-settings.php:243
 msgid "Settings"
 msgstr ""
 
-#: includes/general-settings.php:246
+#: includes/general-settings.php:247
 msgid "Shortcodes"
 msgstr ""
 
-#: includes/general-settings.php:250
+#: includes/general-settings.php:251
 msgid "System Info"
 msgstr ""
 
-#: includes/general-settings.php:254
+#: includes/general-settings.php:255
 msgid "License"
 msgstr ""
 
-#: includes/general-settings.php:269
+#: includes/general-settings.php:270
 msgid "Invoice Template"
 msgstr ""
 
-#: includes/general-settings.php:273
+#: includes/general-settings.php:274
 msgid "You are using a custom template."
 msgstr ""
 
-#: includes/general-settings.php:275
+#: includes/general-settings.php:276
 msgid "No custom template is set. The default template will be used."
 msgstr ""
 
-#: includes/general-settings.php:280
+#: includes/general-settings.php:281
 msgid "Edit Template"
 msgstr ""
 
-#: includes/general-settings.php:280
+#: includes/general-settings.php:281
 msgid "Create Template"
 msgstr ""
 
-#: includes/general-settings.php:285
+#: includes/general-settings.php:286
 msgid "Reset to Default"
 msgstr ""
 
-#: includes/general-settings.php:290
+#: includes/general-settings.php:291
 msgid "Select Built-in Template"
 msgstr ""
 
-#: includes/general-settings.php:295
+#: includes/general-settings.php:296
 msgid "Download Sample PDF"
 msgstr ""
 
-#: includes/general-settings.php:299
+#: includes/general-settings.php:300
 msgid "Tip: Not sure where to start? Click \"Select Built-in Template\" to choose from our included designs."
 msgstr ""
 
-#: includes/general-settings.php:305
+#: includes/general-settings.php:306
 msgid "Generate Invoices"
 msgstr ""
 
-#: includes/general-settings.php:308
+#: includes/general-settings.php:309
 msgid "No output yet..."
 msgstr ""
 
-#: includes/general-settings.php:316
+#: includes/general-settings.php:317
 msgid "Generate Missing Invoices"
 msgstr ""
 
-#: includes/general-settings.php:320
+#: includes/general-settings.php:321
 msgid "Regenerate All Invoices"
 msgstr ""
 
-#: includes/general-settings.php:323
+#: includes/general-settings.php:324
 msgid "\"Generate Missing\" skips orders that already have a PDF. \"Regenerate All\" overwrites every existing PDF. Please leave this window open while processing."
 msgstr ""
 
-#: includes/general-settings.php:329
+#: includes/general-settings.php:330
 msgid "Download Invoices"
 msgstr ""
 
-#: includes/general-settings.php:331
+#: includes/general-settings.php:332
 msgid "Download all stored PDF invoices as a single ZIP file."
 msgstr ""
 
-#: includes/general-settings.php:333
+#: includes/general-settings.php:334
 msgid "Download All as ZIP"
 msgstr ""
 
-#: includes/general-settings.php:339
+#: includes/general-settings.php:340
 msgid "Download by Date Range"
 msgstr ""
 
-#: includes/general-settings.php:341
+#: includes/general-settings.php:342
 msgid "Download a ZIP of invoices filtered to a specific time period."
 msgstr ""
 
-#: includes/general-settings.php:347
+#: includes/general-settings.php:348
 msgid "— Select a period —"
 msgstr ""
 
-#: includes/general-settings.php:348
+#: includes/general-settings.php:349
 msgid "This Month"
 msgstr ""
 
-#: includes/general-settings.php:349
+#: includes/general-settings.php:350
 msgid "Last Month"
 msgstr ""
 
-#: includes/general-settings.php:350
+#: includes/general-settings.php:351
 msgid "This Quarter"
 msgstr ""
 
-#: includes/general-settings.php:351
+#: includes/general-settings.php:352
 msgid "This Year"
 msgstr ""
 
-#: includes/general-settings.php:352
+#: includes/general-settings.php:353
 msgid "Custom Range"
 msgstr ""
 
-#: includes/general-settings.php:355
+#: includes/general-settings.php:356
 msgid "From"
 msgstr ""
 
-#: includes/general-settings.php:357
+#: includes/general-settings.php:358
 msgid "To"
 msgstr ""
 
-#: includes/general-settings.php:361
+#: includes/general-settings.php:362
 msgid "Download ZIP"
 msgstr ""
 
-#: includes/general-settings.php:369
+#: includes/general-settings.php:370
 msgid "Danger Zone"
 msgstr ""
 
-#: includes/general-settings.php:371
+#: includes/general-settings.php:372
 msgid "Permanently delete all stored PDF invoice files from the server. This cannot be undone. PDFs can be regenerated using the Generate Invoices tool above."
 msgstr ""
 
-#: includes/general-settings.php:374
+#: includes/general-settings.php:375
 msgid "Delete All PDF Invoices"
 msgstr ""
 
-#: includes/general-settings.php:387
+#: includes/general-settings.php:388
 msgid "Nginx Configuration"
 msgstr ""
 
-#: includes/general-settings.php:389
+#: includes/general-settings.php:390
 msgid "Your server is running Nginx. To protect stored invoices, add the following rule to your Nginx WordPress config file."
 msgstr ""
 
-#: includes/general-settings.php:411
+#: includes/general-settings.php:412
 msgid "Invoice Logo"
 msgstr ""
 
-#: includes/general-settings.php:415
+#: includes/general-settings.php:416
 msgid "Logo Image"
 msgstr ""
 
-#: includes/general-settings.php:421
+#: includes/general-settings.php:422
 msgid "No logo selected."
 msgstr ""
 
-#: includes/general-settings.php:425
+#: includes/general-settings.php:426
 msgid "Select Image"
 msgstr ""
 
-#: includes/general-settings.php:427
+#: includes/general-settings.php:428
 msgid "Remove"
 msgstr ""
 
-#: includes/general-settings.php:429
+#: includes/general-settings.php:430
 msgid "This logo will appear in your invoice PDFs via the {{logo_image}} template variable."
 msgstr ""
 
-#: includes/general-settings.php:437
+#: includes/general-settings.php:438
 msgid "Email Settings"
 msgstr ""
 
-#: includes/general-settings.php:441
+#: includes/general-settings.php:442
 msgid "Admin Emails"
 msgstr ""
 
-#: includes/general-settings.php:445
+#: includes/general-settings.php:446
 msgid "Attach PDF invoices to admin checkout notification emails."
 msgstr ""
 
-#: includes/general-settings.php:447
+#: includes/general-settings.php:448
 msgid "By default, PDF invoices are only attached to member-facing emails. Enable this to also attach them to admin copies."
 msgstr ""
 
-#: includes/general-settings.php:454
+#: includes/general-settings.php:456
 msgid "Save Settings"
 msgstr ""
 
-#: includes/general-settings.php:465
+#: includes/general-settings.php:467
 msgid "Available Shortcodes"
 msgstr ""
 
-#: includes/general-settings.php:472
+#: includes/general-settings.php:474
 msgid "Displays a table of the current user's PDF invoices with download links."
 msgstr ""
 
-#: includes/general-settings.php:478
+#: includes/general-settings.php:480
 msgid "Displays a link allowing the current user to download all their PDF invoices as a ZIP archive."
 msgstr ""
 
-#: includes/general-settings.php:481
+#: includes/general-settings.php:483
 msgid "The ZipArchive PHP module is not available on your server. This shortcode will not function until it is enabled."
 msgstr ""
 
-#: includes/general-settings.php:493
+#: includes/general-settings.php:495
 msgid "Add Shortcodes to Account Page"
 msgstr ""
 
-#: includes/general-settings.php:496
+#: includes/general-settings.php:498
 msgid "Automatically append both shortcodes to your PMPro Account Page."
 msgstr ""
 
-#: includes/general-settings.php:509
+#: includes/general-settings.php:511
 msgid "System Status"
 msgstr ""
 
-#: includes/general-settings.php:513
+#: includes/general-settings.php:515
 msgid "ZipArchive Module"
 msgstr ""
 
-#: includes/general-settings.php:516
+#: includes/general-settings.php:518
 msgid "Available"
 msgstr ""
 
-#: includes/general-settings.php:517
+#: includes/general-settings.php:519
 msgid "ZIP archive downloads are enabled."
 msgstr ""
 
-#: includes/general-settings.php:519
+#: includes/general-settings.php:521
 msgid "Unavailable"
 msgstr ""
 
-#: includes/general-settings.php:520
+#: includes/general-settings.php:522
 msgid "ZIP functionality is disabled. Enable the ZipArchive module on your server to use it."
 msgstr ""
 
-#: includes/general-settings.php:525
+#: includes/general-settings.php:527
 msgid "Invoice File Protection"
 msgstr ""
 
-#: includes/general-settings.php:528
+#: includes/general-settings.php:530
 msgid "Active (PMPro)"
 msgstr ""
 
-#: includes/general-settings.php:529
+#: includes/general-settings.php:531
 msgid "Invoice files are stored in PMPro's restricted content directory."
 msgstr ""
 
-#: includes/general-settings.php:531
-#: includes/general-settings.php:626
+#: includes/general-settings.php:533
+#: includes/general-settings.php:628
 msgid "Active"
 msgstr ""
 
-#: includes/general-settings.php:532
+#: includes/general-settings.php:534
 msgid "Invoice files are protected and cannot be accessed directly."
 msgstr ""
 
-#: includes/general-settings.php:534
+#: includes/general-settings.php:536
 msgid "Inactive"
 msgstr ""
 
-#: includes/general-settings.php:535
+#: includes/general-settings.php:537
 msgid "Invoice files are not protected and may be accessed directly."
 msgstr ""
 
-#: includes/general-settings.php:540
+#: includes/general-settings.php:542
 msgid "Plugin Version"
 msgstr ""
 
-#: includes/general-settings.php:548
-#: includes/general-settings.php:553
+#: includes/general-settings.php:550
+#: includes/general-settings.php:555
 msgid "Regenerate Rewrite File"
 msgstr ""
 
-#: includes/general-settings.php:549
+#: includes/general-settings.php:551
 msgid "Use this if invoices are not downloading correctly. This will regenerate the .htaccess protection file."
 msgstr ""
 
-#: includes/general-settings.php:559
+#: includes/general-settings.php:561
 msgid "PDF Invoice Coverage"
 msgstr ""
 
 #. translators: 1: number of orders with PDFs, 2: total number of orders
-#: includes/general-settings.php:565
+#: includes/general-settings.php:567
 #, php-format
 msgid "%1$d of %2$d orders have PDF invoices generated."
 msgstr ""
 
-#: includes/general-settings.php:574
+#: includes/general-settings.php:576
 msgid "Unable to calculate coverage stats."
 msgstr ""
 
-#: includes/general-settings.php:592
+#: includes/general-settings.php:594
 msgid "Your license key has expired. <a href=\"https://yoohooplugins.com/plugins/paid-memberships-pro-pdf-invoices/\" target=\"_blank\" rel=\"noopener\">Renew your license</a> to continue receiving automatic updates and priority support."
 msgstr ""
 
-#: includes/general-settings.php:596
+#: includes/general-settings.php:598
 msgid "Enter your license key below to enable automatic updates and support. <a href=\"https://yoohooplugins.com/plugins/paid-memberships-pro-pdf-invoices/\" target=\"_blank\" rel=\"noopener\">Purchase a license</a> if you don't have one yet."
 msgstr ""
 
-#: includes/general-settings.php:601
-#: includes/general-settings.php:609
+#: includes/general-settings.php:603
+#: includes/general-settings.php:611
 msgid "License Key"
 msgstr ""
 
-#: includes/general-settings.php:617
+#: includes/general-settings.php:619
 msgid "Paste your license key here"
 msgstr ""
 
-#: includes/general-settings.php:618
+#: includes/general-settings.php:620
 msgid "Your license key can be found in your Yoohoo Plugins account."
 msgstr ""
 
-#: includes/general-settings.php:622
+#: includes/general-settings.php:624
 msgid "License Status"
 msgstr ""
 
-#: includes/general-settings.php:628
+#: includes/general-settings.php:630
 #, php-format
 msgid "Expires: %s"
 msgstr ""
 
-#: includes/general-settings.php:630
+#: includes/general-settings.php:632
 msgid "Lifetime license."
 msgstr ""
 
-#: includes/general-settings.php:633
+#: includes/general-settings.php:635
 msgid "Expired"
 msgstr ""
 
-#: includes/general-settings.php:636
+#: includes/general-settings.php:638
 msgid "Unregistered"
 msgstr ""
 
-#: includes/general-settings.php:643
+#: includes/general-settings.php:645
 msgid "Save License Key"
 msgstr ""
 
-#: includes/general-settings.php:646
+#: includes/general-settings.php:648
 msgid "Deactivate License"
 msgstr ""
 
-#: includes/general-settings.php:664
+#: includes/general-settings.php:666
 msgid "Select a Built-in Template"
 msgstr ""
 
-#: includes/general-settings.php:665
+#: includes/general-settings.php:667
 msgid "Close"
 msgstr ""
 
-#: includes/general-settings.php:668
+#: includes/general-settings.php:670
 msgid "Click a template to apply it. Note: selecting a built-in template will replace your current custom template."
 msgstr ""
 
-#: includes/general-settings.php:672
+#: includes/general-settings.php:674
 msgid "Blank"
 msgstr ""
 
-#: includes/general-settings.php:673
+#: includes/general-settings.php:675
 msgid "Default"
 msgstr ""
 
-#: includes/general-settings.php:674
+#: includes/general-settings.php:676
 msgid "Corporate"
 msgstr ""
 
-#: includes/general-settings.php:675
+#: includes/general-settings.php:677
 msgid "Green"
 msgstr ""
 
-#: includes/general-settings.php:676
+#: includes/general-settings.php:678
 msgid "Split"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:129
-#: pmpro-pdf-invoices.php:130
-#: pmpro-pdf-invoices.php:913
+#: includes/sequential-settings.php:37
+msgid "Sequential Invoice Numbers"
+msgstr ""
+
+#: includes/sequential-settings.php:41
+msgid "Enable Sequential Numbers"
+msgstr ""
+
+#: includes/sequential-settings.php:49
+msgid "Use sequential invoice numbers instead of random order codes"
+msgstr ""
+
+#: includes/sequential-settings.php:52
+msgid "When enabled, invoices will display formatted sequential numbers like INV-0001, INV-0002, etc. The original order code is preserved in PMPro."
+msgstr ""
+
+#: includes/sequential-settings.php:58
+msgid "Prefix"
+msgstr ""
+
+#: includes/sequential-settings.php:66
+msgid "Text to appear before the number. Example: \"INV-\" produces INV-0001"
+msgstr ""
+
+#: includes/sequential-settings.php:72
+msgid "Suffix"
+msgstr ""
+
+#: includes/sequential-settings.php:80
+msgid "Text to appear after the number (optional). Example: \"-UK\" produces INV-0001-UK"
+msgstr ""
+
+#: includes/sequential-settings.php:86
+msgid "Number Padding"
+msgstr ""
+
+#: includes/sequential-settings.php:95
+msgid "Total digits. 4 = 0001, 5 = 00001, etc."
+msgstr ""
+
+#: includes/sequential-settings.php:101
+msgid "Include Year"
+msgstr ""
+
+#: includes/sequential-settings.php:109
+msgid "Include the current year in invoice numbers"
+msgstr ""
+
+#: includes/sequential-settings.php:112
+msgid "Useful for annual sequences or compliance requirements."
+msgstr ""
+
+#: includes/sequential-settings.php:118
+msgid "Reset Yearly"
+msgstr ""
+
+#: includes/sequential-settings.php:126
+msgid "Reset numbering to 1 at the start of each year"
+msgstr ""
+
+#: includes/sequential-settings.php:129
+msgid "Only available when \"Include Year\" is enabled. Required for EU VAT compliance."
+msgstr ""
+
+#: includes/sequential-settings.php:134
+msgid "Year Placement"
+msgstr ""
+
+#: includes/sequential-settings.php:138
+msgid "After prefix (INV-2026-0001)"
+msgstr ""
+
+#: includes/sequential-settings.php:141
+msgid "Before suffix (INV-0001-2026)"
+msgstr ""
+
+#: includes/sequential-settings.php:148
+msgid "Next Invoice Number"
+msgstr ""
+
+#: includes/sequential-settings.php:157
+msgid "The next real order saved will use this number. This is only a starting point — the number is derived from the order's actual ID when it is saved, so it can never drift out of sync with real orders (unlike a manually incremented counter)."
+msgstr ""
+
+#: includes/sequential-settings.php:163
+msgid "Replace Order Code"
+msgstr ""
+
+#: includes/sequential-settings.php:170
+msgid "Use sequential number for {{invoice_code}} variable"
+msgstr ""
+
+#: includes/sequential-settings.php:173
+msgid "When enabled, {{invoice_code}} will display the sequential number instead of the PMPro order code. {{sequential_invoice_number}} is always available."
+msgstr ""
+
+#: includes/sequential-settings.php:182
+msgid "Preview:"
+msgstr ""
+
+#: includes/sequential-settings.php:188
+msgid "Template Variable:"
+msgstr ""
+
+#: includes/sequential-settings.php:189
+msgid "Displays the sequential invoice number in your PDF template."
+msgstr ""
+
+#: pmpro-pdf-invoices.php:133
+#: pmpro-pdf-invoices.php:134
+#: pmpro-pdf-invoices.php:917
 msgid "PDF Invoices"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:137
+#: pmpro-pdf-invoices.php:141
 msgid "PMPro PDF Invoices Settings"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:270
-#: pmpro-pdf-invoices.php:276
+#: pmpro-pdf-invoices.php:274
+#: pmpro-pdf-invoices.php:280
 msgid "Billing Details"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:294
+#: pmpro-pdf-invoices.php:298
 msgid "N/A"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:297
+#: pmpro-pdf-invoices.php:301
 msgid "Free"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:457
+#: pmpro-pdf-invoices.php:461
 msgid "Invoice PDF"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:475
-#: pmpro-pdf-invoices.php:1378
+#: pmpro-pdf-invoices.php:479
+#: pmpro-pdf-invoices.php:1382
 msgid "Download PDF"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:477
+#: pmpro-pdf-invoices.php:481
 msgid "Generate PDF"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:827
+#: pmpro-pdf-invoices.php:831
 msgid "Please login to view your invoices."
 msgstr ""
 
-#: pmpro-pdf-invoices.php:857
+#: pmpro-pdf-invoices.php:861
 msgid "Paid"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:861
+#: pmpro-pdf-invoices.php:865
 msgid "Pending"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:864
+#: pmpro-pdf-invoices.php:868
 msgid "Refunded"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:873
-#: pmpro-pdf-invoices.php:896
-msgid "Status"
-msgstr ""
-
-#: pmpro-pdf-invoices.php:887
-msgid "Invoice History"
-msgstr ""
-
-#: pmpro-pdf-invoices.php:893
+#: pmpro-pdf-invoices.php:874
+#: pmpro-pdf-invoices.php:897
 msgid "Date"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:894
+#: pmpro-pdf-invoices.php:875
+#: pmpro-pdf-invoices.php:898
 msgid "Level"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:895
+#: pmpro-pdf-invoices.php:876
+#: pmpro-pdf-invoices.php:899
 msgid "Total"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:897
+#: pmpro-pdf-invoices.php:877
+#: pmpro-pdf-invoices.php:900
+msgid "Status"
+msgstr ""
+
+#: pmpro-pdf-invoices.php:879
+#: pmpro-pdf-invoices.php:901
 msgid "Download"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:914
+#: pmpro-pdf-invoices.php:891
+msgid "Invoice History"
+msgstr ""
+
+#: pmpro-pdf-invoices.php:918
 msgid "No PDF invoices found..."
 msgstr ""
 
-#: pmpro-pdf-invoices.php:926
+#: pmpro-pdf-invoices.php:930
 msgid "Download all PDF's as ZIP"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1029
+#: pmpro-pdf-invoices.php:1033
 msgid "Invalid date format for date_from."
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1032
+#: pmpro-pdf-invoices.php:1036
 msgid "Invalid date format for date_to."
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1209
+#: pmpro-pdf-invoices.php:1213
 msgid "Paid Memberships Pro - PDF Invoices - Nginx Detected"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1210
+#: pmpro-pdf-invoices.php:1214
 msgid "We detected that your installation is running on Nginx. To protect generated invoices that are stored on your web server, the following Nginx rule should be added to your Nginx WordPress installation config file."
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1218
+#: pmpro-pdf-invoices.php:1222
 msgid "I've Added The Nginx Rule"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1396
+#: pmpro-pdf-invoices.php:1400
 msgid "Nonce is invalid"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1455
-#: pmpro-pdf-invoices.php:1507
+#: pmpro-pdf-invoices.php:1459
+#: pmpro-pdf-invoices.php:1511
 #, php-format
 msgid "%s your copy of PMPro PDF Invoices to receive access to automatic upgrades and support. Need a license key? %s"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1455
-#: pmpro-pdf-invoices.php:1507
+#: pmpro-pdf-invoices.php:1459
+#: pmpro-pdf-invoices.php:1511
 msgid "Register"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1455
-#: pmpro-pdf-invoices.php:1507
+#: pmpro-pdf-invoices.php:1459
+#: pmpro-pdf-invoices.php:1511
 msgid "Purchase one now."
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1574
+#: pmpro-pdf-invoices.php:1578
 #, php-format
 msgid "Download PDF invoice for order # %s"
 msgstr ""
 
-#: pmpro-pdf-invoices.php:1578
+#: pmpro-pdf-invoices.php:1582
 msgid "Download PDF Invoice"
 msgstr ""
